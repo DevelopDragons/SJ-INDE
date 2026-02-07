@@ -1,5 +1,10 @@
+import { NextResponse } from 'next/server';
 import pool from "@/src/lib/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
+import path from 'path';
+import fs from 'fs';
+import { writeFile, unlink } from 'fs/promises';
+
 
 // 개별 프로젝트 조회 - GET
 export async function GET(req: Request, context: { params: Promise<{ id: string }>}) {
@@ -7,7 +12,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         const {id} = await context.params;
         
         const projectId = Number(id);
-        const [rows] = await pool.query<RowDataPacket[]>("SELECT * FROM project where id = ?",
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT * FROM project where id = ?",
             [projectId]
         );
 
@@ -45,6 +51,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
         const title = data.get("title") as string;
         const subTitle = data.get("subTitle") as string;
+        const files = data.getAll("files") as File[];
         const now = new Date();
 
         if(!title || !subTitle) {
@@ -68,6 +75,53 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             );
         }
 
+        const [oldFiles] = await pool.query<RowDataPacket[]>(
+            "SELECT saveName FROM files WHERE project_id = ?",
+            [projectId]
+        );
+
+        const envPath = process.env.FILE_UPLOAD_PATH || "public/uploads";
+        const uploadDir = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
+
+        await Promise.all(
+            oldFiles.map(async (file) => {
+                const filePath = path.join(uploadDir, file.saveName);
+                if(fs.existsSync(filePath)) {
+                    await unlink(filePath);
+                }
+            })
+        );
+
+        await pool.query("DELETE FROM files WHERE project_id = ?", [projectId]);
+
+        // 다중 파일 처리(물리 저장 + DB 저장)
+        const fileUploadResults = await Promise.all(
+            files.map(async (file) => {
+                const ext = path.extname(file.name);
+                const saveName = `${crypto.randomUUID()}${ext}`;
+                const buffer = Buffer.from(await file.arrayBuffer());
+
+                // 로컬에 파일 저장
+                await writeFile(path.join(uploadDir, saveName), buffer);
+
+                // DB에 파일 저장
+                await pool.query(
+                    "INSERT INTO files (project_id, originName, saveName, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?)",
+                    [projectId, file.name, saveName, now, now]
+                );
+
+                return { originName: file.name, saveName};
+            })
+        );
+        return NextResponse.json({
+            message: "success",
+            projectInfo: {
+                id: projectId,
+                title, 
+                files: fileUploadResults
+            }
+        }, { status: 201});
+
         return new Response(
             JSON.stringify({
                 message: "프로젝트 수정 성공"
@@ -89,6 +143,25 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
     try {
         const {id} = await context.params;
         const projectId = Number(id);
+
+        const [oldFiles] = await pool.query<RowDataPacket[]>(
+            "SELECT saveName FROM files WHERE project_id",
+            [projectId]
+        );
+
+        const envPath = process.env.FILE_UPLOAD_PATH || "public/uploads";
+        const uploadDir = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
+
+        await Promise.all(
+            oldFiles.map(async (file) => {
+                const filePath = path.join(uploadDir, file.saveName);
+                if(fs.existsSync(filePath)) {
+                    await unlink(filePath);
+                }
+            })
+        );
+
+        await pool.query("DELETE FROM files WHERE project_id = ?", [projectId]);
 
         const [result] = await pool.query(
             "DELETE FROM project WHERE id = ?",
