@@ -1,56 +1,56 @@
-'use client';
+"use client";
 
 export default function WorkPage() {
   const services = [
     {
-      title: '공간 기획 및 디자인',
+      title: "공간 기획 및 디자인",
       description:
-        '브랜드 아이덴티티를 반영한 창의적이고 실용적인 공간 디자인을 제공합니다.',
-      items: ['컨셉 개발', '공간 기획', '디자인 설계', '3D 시뮬레이션'],
+        "브랜드 아이덴티티를 반영한 창의적이고 실용적인 공간 디자인을 제공합니다.",
+      items: ["컨셉 개발", "공간 기획", "디자인 설계", "3D 시뮬레이션"],
     },
     {
-      title: '인테리어 시공',
-      description:
-        '축적된 노하우와 전문 기술력으로 완벽한 시공을 보장합니다.',
-      items: ['설계 검토', '자재 선정', '시공 관리', '품질 관리'],
+      title: "인테리어 시공",
+      description: "축적된 노하우와 전문 기술력으로 완벽한 시공을 보장합니다.",
+      items: ["설계 검토", "자재 선정", "시공 관리", "품질 관리"],
     },
     {
-      title: '프로젝트 관리',
-      description: '프로젝트 전 과정을 체계적으로 관리하여 최상의 결과를 도출합니다.',
-      items: ['일정 관리', '예산 관리', '품질 관리', '사후 관리'],
+      title: "프로젝트 관리",
+      description:
+        "프로젝트 전 과정을 체계적으로 관리하여 최상의 결과를 도출합니다.",
+      items: ["일정 관리", "예산 관리", "품질 관리", "사후 관리"],
     },
   ];
 
   const process = [
     {
-      step: '01',
-      title: '상담 및 현장 조사',
-      description: '고객의 요구사항을 파악하고 현장을 정밀하게 분석합니다.',
+      step: "01",
+      title: "상담 및 현장 조사",
+      description: "고객의 요구사항을 파악하고 현장을 정밀하게 분석합니다.",
     },
     {
-      step: '02',
-      title: '컨셉 제안',
-      description: '브랜드와 공간의 특성을 고려한 창의적인 컨셉을 제안합니다.',
+      step: "02",
+      title: "컨셉 제안",
+      description: "브랜드와 공간의 특성을 고려한 창의적인 컨셉을 제안합니다.",
     },
     {
-      step: '03',
-      title: '디자인 개발',
-      description: '승인된 컨셉을 바탕으로 상세 디자인을 개발합니다.',
+      step: "03",
+      title: "디자인 개발",
+      description: "승인된 컨셉을 바탕으로 상세 디자인을 개발합니다.",
     },
     {
-      step: '04',
-      title: '시공 및 감리',
-      description: '전문 시공팀이 설계도에 따라 정확하게 시공합니다.',
+      step: "04",
+      title: "시공 및 감리",
+      description: "전문 시공팀이 설계도에 따라 정확하게 시공합니다.",
     },
     {
-      step: '05',
-      title: '완공 및 인도',
-      description: '최종 점검 후 고객에게 완벽한 공간을 인도합니다.',
+      step: "05",
+      title: "완공 및 인도",
+      description: "최종 점검 후 고객에게 완벽한 공간을 인도합니다.",
     },
     {
-      step: '06',
-      title: 'A/S 및 사후관리',
-      description: '완공 후에도 지속적인 관리와 지원을 제공합니다.',
+      step: "06",
+      title: "A/S 및 사후관리",
+      description: "완공 후에도 지속적인 관리와 지원을 제공합니다.",
     },
   ];
 
@@ -71,7 +71,7 @@ export default function WorkPage() {
             <h2 className="text-4xl font-bold mb-6">사업 분야</h2>
             <div className="h-1 w-20 bg-accent mx-auto mb-8"></div>
             <p className="text-lg text-gray-600">
-              P&K INC는 다양한 분야에서 전문적인 서비스를 제공합니다
+              SJ INDE는 다양한 분야에서 전문적인 서비스를 제공합니다
             </p>
           </div>
 
@@ -82,7 +82,7 @@ export default function WorkPage() {
                 className="bg-gray-50 p-8 rounded-lg hover:shadow-xl transition-shadow"
               >
                 <div className="text-5xl font-bold text-accent mb-4 opacity-20">
-                  {String(index + 1).padStart(2, '0')}
+                  {String(index + 1).padStart(2, "0")}
                 </div>
                 <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
                 <p className="text-gray-600 mb-6">{service.description}</p>
@@ -143,7 +143,7 @@ export default function WorkPage() {
             프로젝트를 시작할 준비가 되셨나요?
           </h2>
           <p className="text-xl mb-8 text-gray-300">
-            P&K INC와 함께 가치 있는 공간을 만들어보세요
+            SJ INDE와 함께 가치 있는 공간을 만들어보세요
           </p>
           <a
             href="/contact"

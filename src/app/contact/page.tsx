@@ -1,7 +1,5 @@
+"use client";
+
 export default function ContactPage() {
-  return (
-    <div>
-      <h1>Contact Page</h1>
-    </div>
-  );
+  return <div className="pt-20">CONTACT 페이지</div>;
 }

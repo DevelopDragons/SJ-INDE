@@ -1,40 +1,40 @@
-'use client';
+"use client";
 
 export default function ClientsPage() {
   const clients = {
     automotive: [
-      'Ferrari Korea',
-      'Porsche Korea',
-      'Mercedes-Benz Korea',
-      'Maybach Korea',
-      'BMW Korea',
-      'Audi Korea',
-      'Lamborghini Korea',
-      'Maserati Korea',
+      "Ferrari Korea",
+      "Porsche Korea",
+      "Mercedes-Benz Korea",
+      "Maybach Korea",
+      "BMW Korea",
+      "Audi Korea",
+      "Lamborghini Korea",
+      "Maserati Korea",
     ],
     retail: [
       "NOP'S",
-      'Ddagoo',
-      'Starbucks Korea',
-      'Blue Bottle Coffee',
-      'The Coffee Bean',
-      'Paul Bassett',
+      "Ddagoo",
+      "Starbucks Korea",
+      "Blue Bottle Coffee",
+      "The Coffee Bean",
+      "Paul Bassett",
     ],
     fashion: [
-      'Gucci Korea',
-      'Louis Vuitton Korea',
-      'Prada Korea',
-      'Hermes Korea',
-      'Chanel Korea',
-      'Dior Korea',
+      "Gucci Korea",
+      "Louis Vuitton Korea",
+      "Prada Korea",
+      "Hermes Korea",
+      "Chanel Korea",
+      "Dior Korea",
     ],
     others: [
-      'Shinsegae Department Store',
-      'Lotte Department Store',
-      'Hyundai Department Store',
-      'Galleria Department Store',
-      'Starfield Mall',
-      'COEX Mall',
+      "Shinsegae Department Store",
+      "Lotte Department Store",
+      "Hyundai Department Store",
+      "Galleria Department Store",
+      "Starfield Mall",
+      "COEX Mall",
     ],
   };
 
@@ -75,7 +75,7 @@ export default function ClientsPage() {
             <h2 className="text-4xl font-bold mb-6">신뢰받는 파트너</h2>
             <div className="h-1 w-20 bg-accent mx-auto mb-8"></div>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              P&K INC는 국내외 유수의 글로벌 브랜드들과 파트너십을 맺고
+              SJ INDE는 국내외 유수의 글로벌 브랜드들과 파트너십을 맺고
               있습니다.
               <br />
               축적된 경험과 전문성을 바탕으로 각 브랜드의 아이덴티티를 완벽하게
@@ -165,9 +165,7 @@ export default function ClientsPage() {
       {/* Testimonial Section */}
       <section className="py-24 bg-white">
         <div className="container-custom max-w-4xl">
-          <h2 className="text-4xl font-bold mb-16 text-center">
-            고객사 후기
-          </h2>
+          <h2 className="text-4xl font-bold mb-16 text-center">고객사 후기</h2>
 
           <div className="space-y-8">
             <div className="bg-gray-50 p-8 rounded-lg">
@@ -179,7 +177,7 @@ export default function ClientsPage() {
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed">
-                P&K INC와의 협업을 통해 우리 브랜드의 정체성을 완벽하게 구현한
+                SJ INDE와의 협업을 통해 우리 브랜드의 정체성을 완벽하게 구현한
                 공간을 만들 수 있었습니다. 전문적인 접근과 세심한 배려가
                 돋보였습니다.
               </p>

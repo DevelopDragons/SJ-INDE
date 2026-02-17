@@ -1,102 +1,227 @@
+/** @jsxImportSource @emotion/react */
 "use client";
 
-import { useEffect } from "react";
-import * as S from "./main.styles";
-import SectionCard, { ResponsiveGrid } from "../components/common/SectionCard";
+import { css } from "@emotion/react";
+import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import CommonButton from "../components/common/Button";
+import { contactDataList } from "../../public/data/company";
+import { data_main } from "../../public/data/main";
+import ContactInfo from "../components/main/ContactInfo";
+import BlurredBgButton from "../components/common/BlurredBgButton";
 
 export default function HomePage() {
+  const [activeSection, setActiveSection] = useState("main");
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animate-fadeInUp");
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
-      { threshold: 0.1 },
+      { threshold: 0.5 },
     );
 
-    const elements = document.querySelectorAll(".fade-in-section");
-    elements.forEach((el) => observer.observe(el));
+    Object.values(sectionRefs.current).forEach((section) => {
+      if (section) observer.observe(section);
+    });
 
     return () => observer.disconnect();
   }, []);
 
+  // --- 공통 스타일 (객체 형식) ---
+  const sectionStyle = css({
+    position: "relative",
+    height: "100vh",
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    scrollSnapAlign: "start",
+    overflow: "hidden",
+  });
+
+  const overlayStyle = css({
+    position: "absolute",
+    inset: 0,
+    background: "rgba(0, 0, 0, 0.4)",
+    zIndex: 1,
+  });
+
+  const contentStyle = css({
+    position: "relative",
+    zIndex: 2,
+    color: "white",
+    textAlign: "center",
+    padding: "0 20px",
+  });
+
   return (
-    <S.FullPage>
-      {/* Hero Section */}
-      <S.HeroSection>
-        <div style={{ zIndex: 10 }}>
-          <S.HeroTitle>
-            WE DESIGN
-            <br />
-            THE FUTURE OF SPACE
-            <br />
-            WITH VALUE IN MIND.
-          </S.HeroTitle>
-          <S.ScrollIndicator>
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+    <div
+      css={css({
+        height: "100vh",
+        overflowY: "auto",
+        scrollSnapType: "y mandatory",
+        scrollbarWidth: "none",
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
+      })}
+    >
+      {/* 사이드 내비게이션 */}
+      <aside
+        css={css({
+          position: "fixed",
+          right: "40px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 100,
+          display: "flex",
+          flexDirection: "column",
+          gap: "1.5rem",
+        })}
+      >
+        {[...data_main.map((d) => d.id), "contact"].map((id) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            css={css({
+              fontSize: "0.75rem",
+              textDecoration: "none",
+              color: activeSection === id ? "#fff" : "rgba(255,255,255,0.4)",
+              fontWeight: activeSection === id ? "bold" : "normal",
+              transition: "all 0.3s ease",
+              textAlign: "right",
+              "&::after": {
+                content: '""',
+                display: "inline-block",
+                width: activeSection === id ? "30px" : "0px",
+                height: "1px",
+                background: "white",
+                marginLeft: "10px",
+                verticalAlign: "middle",
+                transition: "width 0.3s ease",
+              },
+            })}
+            onClick={(e) => {
+              e.preventDefault();
+              document
+                .getElementById(id)
+                ?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            {id.toUpperCase()}
+          </a>
+        ))}
+      </aside>
+
+      {/* 메인 섹션들 */}
+      {data_main.map((sec) => (
+        <section
+          key={sec.id}
+          id={sec.id}
+          ref={(el) => {
+            sectionRefs.current[sec.id] = el;
+          }}
+          css={sectionStyle}
+        >
+          <Image
+            src={`/images/${sec.id}.jpg`}
+            alt={sec.id}
+            fill
+            priority={sec.id === "main"}
+            style={{ objectFit: "cover" }}
+          />
+          <div css={overlayStyle} />
+
+          <div css={contentStyle}>
+            <div
+              css={css({
+                fontSize: "0.9rem",
+                letterSpacing: "0.3em",
+                marginBottom: "1rem",
+              })}
             >
-              <path
-                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              {sec.view}
+            </div>
+            {sec.id !== "main" && (
+              <div
+                css={css({
+                  width: "40px",
+                  height: "1px",
+                  background: "white",
+                  margin: "1.5rem auto",
+                })}
               />
-            </svg>
-            <span>SCROLL</span>
-          </S.ScrollIndicator>
-        </div>
-      </S.HeroSection>
-
-      {/* Company Section */}
-      <S.ContentSection className="fade-in-section" bgColor="#ffffff">
-        <S.Container>
-          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-            <S.SectionTitle>COMPANY</S.SectionTitle>
-            <S.Description>
-              P&K INC는
-              <br />
-              최고의 <strong>전문성, 기술력</strong>을 바탕으로
-              <br />
-              가치있는 공간을 창조하는
-              <br />
-              <strong>신뢰받는 기업</strong>입니다.
-            </S.Description>
-            <CommonButton href="/company/overview">OVERVIEW</CommonButton>
+            )}
+            <h1
+              css={css({
+                fontSize: "clamp(2rem, 5vw, 4rem)",
+                marginBottom: "1.5rem",
+                whiteSpace: "pre-line",
+              })}
+            >
+              {sec.title}
+            </h1>
+            {sec.content && (
+              <p
+                css={css({
+                  fontSize: "1.2rem",
+                  opacity: 0.8,
+                  marginBottom: "2rem",
+                })}
+              >
+                {sec.content}
+              </p>
+            )}
+            {sec.id !== "main" && (
+              <BlurredBgButton href={`/${sec.id}`} variant="outline">
+                Detail →
+              </BlurredBgButton>
+            )}
           </div>
-        </S.Container>
-      </S.ContentSection>
+        </section>
+      ))}
 
-      {/* Business Section */}
-      <S.ContentSection className="fade-in-section" bgColor="#f9fafb">
-        <S.Container>
-          <ResponsiveGrid>
-            <SectionCard
-              title="BUSINESS"
-              description="축적된 시공경험 및 기술력으로 전문 맞춤 시스템을 구축하며..."
-              href="/business/work"
-            />
-            <SectionCard
-              title="DESIGN PROCESS"
-              description="더 나은 공간제안을 위한 P&K INC의 디자인 프로세스를 안내드립니다."
-              href="/business/work#process"
-            />
-            <SectionCard
-              title="CLIENTS"
-              description="국내외(글로벌) 고객사와 협력을 통해 끊임없는 성장을 하고 있습니다."
-              href="/business/clients"
-            />
-          </ResponsiveGrid>
-        </S.Container>
-      </S.ContentSection>
-    </S.FullPage>
+      {/* Contact 섹션 */}
+      <section
+        id="contact"
+        ref={(el) => {
+          sectionRefs.current["contact"] = el;
+        }}
+        css={sectionStyle}
+      >
+        <Image
+          src="/images/contact.png"
+          alt="contact"
+          fill
+          style={{ objectFit: "cover" }}
+        />
+        <div css={overlayStyle} />
+        <div css={contentStyle}>
+          <Image
+            width={250}
+            height={250}
+            src="/logo/logo_white_text.png"
+            alt="logo"
+            // fill
+            style={{ objectFit: "cover" }}
+          />
+          <ContactView />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ContactView() {
+  return (
+    <div css={css({ marginTop: 50, textAlign: "left", color: "white" })}>
+      {contactDataList.map((item) => (
+        <ContactInfo key={item.label} label={item.label} value={item.value} />
+      ))}
+    </div>
   );
 }

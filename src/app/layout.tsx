@@ -4,10 +4,10 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 export const metadata: Metadata = {
-  title: "피엔케이아이엔씨 | P&K INC",
+  title: "선준아이디 | SJ INDE",
   description:
     "최고의 전문성, 기술력을 바탕으로 가치있는 공간을 창조하는 신뢰받는 기업",
-  keywords: "피엔케이아이엔씨, P&K INC, 인테리어, 공간디자인, 시공",
+  keywords: "선준아이디, SJ INDE, 인테리어, 공간디자인, 시공",
 };
 
 export default function RootLayout({
@@ -17,14 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <head>
-        <link
-          rel="stylesheet"
-          as="style"
-          crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css"
-        />
-      </head>
+      {/* <head>와 내부 <link> 태그는 globals.css에서 처리하므로 삭제했습니다. */}
       <body>
         <Header />
         <main>{children}</main>

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -7,9 +7,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-2xl font-bold mb-4">P&K INC</h3>
+            <h3 className="text-2xl font-bold mb-4">SJ INDE</h3>
             <div className="space-y-2 text-gray-300">
-              <p className="font-bold">(주)피엔케이아이엔씨</p>
+              <p className="font-bold">선준아이디</p>
               <p>주소 : 서울시 송파구 백제고분로 224, 창대빌딩 7층</p>
               <p>TEL : 02-2202-2480</p>
               <p>이메일 : pnkinc@pnkinc.co.kr</p>
@@ -54,7 +54,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
-          <p>COPYRIGHT© 2022 (주)피엔케이아이엔씨. ALL RIGHTS RESERVED.</p>
+          <p>COPYRIGHT© 2022 선준아이디. ALL RIGHTS RESERVED.</p>
         </div>
       </div>
     </footer>

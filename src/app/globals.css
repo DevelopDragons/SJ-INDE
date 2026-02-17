@@ -1,14 +1,20 @@
+/* Pretendard 폰트 불러오기 (가변 두께 지원) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* CSS 변수로 폰트 지정 */
+  --font-pretendard:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-pretendard); /* 기본 샌즈 폰트를 Pretendard로 교체 */
   --font-mono: var(--font-geist-mono);
 }
 
@@ -19,13 +25,20 @@
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* 전역 폰트 적용 */
+  font-family: var(--font-pretendard);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 전역 CSS 혹은 Emotion Global Style */
+/* --- 관찰 애니메이션 (Scroll Intersection) --- */
 .observe-me {
   opacity: 0;
   transform: translateY(30px);
@@ -35,4 +48,17 @@ body {
 .observe-me[data-visible="true"] {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* --- Font Weight Helpers (선택사항) --- */
+/* Emotion css({}) 내에서 fontWeight: 100 식으로 직접 써도 작동하지만, 
+   클래스로 제어할 때 유용합니다. */
+.fw-100 {
+  font-weight: 100;
+}
+.fw-500 {
+  font-weight: 500;
+}
+.fw-900 {
+  font-weight: 900;
 }

@@ -29,7 +29,7 @@ export default function Header() {
   const menuItems = [
     {
       title: "COMPANY",
-      path: "/company",
+      path: "/company/about",
       submenu: [
         { title: "About us", path: "/company/about" },
         { title: "CEO Message", path: "/company/ceo" },
@@ -39,7 +39,7 @@ export default function Header() {
     },
     {
       title: "BUSINESS",
-      path: "/business",
+      path: "/business/work",
       submenu: [
         { title: "Work", path: "/business/work" },
         { title: "Clients", path: "/business/clients" },
@@ -73,7 +73,7 @@ export default function Header() {
                   isScrolled || pathname !== "/" ? "text-primary" : "text-white"
                 }`}
               >
-                P&K INC
+                SJ INDE
               </span>
             </Link>
 
