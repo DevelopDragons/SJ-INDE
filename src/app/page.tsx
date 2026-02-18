@@ -1,65 +1,159 @@
-import Image from "next/image";
+/** @jsxImportSource @emotion/react */
+"use client";
 
-export default function Home() {
+import { useState, useEffect, useRef, useCallback } from "react";
+import { css, Global } from "@emotion/react";
+import { data_main } from "../../public/data/main";
+import BasicSection from "../components/main/BasicSection";
+import ContactSection from "../components/main/ContactSection";
+
+export default function HomePage() {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const isScrolling = useRef(false);
+  const activeIdxRef = useRef(0); // 실시간 인덱스 참조용
+
+  const sectionIds = [...data_main.map((d) => d.id), "contact"];
+
+  // 인덱스 이동 함수
+  const scrollToSection = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= sectionIds.length || isScrolling.current)
+        return;
+
+      isScrolling.current = true;
+      setActiveIdx(index);
+      activeIdxRef.current = index; // Ref 업데이트
+
+      const targetId = sectionIds[index];
+      const targetElement = document.getElementById(targetId);
+
+      if (targetElement) {
+        // 부모 컨테이너 내부에서 해당 요소로 정확히 이동
+        targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // 애니메이션 대기 시간 (스크롤 속도에 맞춰 조절)
+      setTimeout(() => {
+        isScrolling.current = false;
+      }, 800);
+    },
+    [sectionIds],
+  );
+
+  // 휠 이벤트 핸들러
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.cancelable) e.preventDefault();
+      if (isScrolling.current) return;
+
+      const current = activeIdxRef.current;
+
+      if (e.deltaY > 50) {
+        // 아래로
+        if (current < sectionIds.length - 1) scrollToSection(current + 1);
+      } else if (e.deltaY < -50) {
+        // 위로
+        if (current > 0) scrollToSection(current - 1);
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [scrollToSection, sectionIds.length]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
+    <>
+      <Global
+        styles={css`
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 전체 브라우저 스크롤 차단 */
+            height: 100%;
+          }
+        `}
+      />
+      <div css={pageContainerStyle}>
+        {/* 사이드 내비게이션 - activeIdx 상태에 따라 즉각 반응 */}
+        <aside css={asideStyle}>
+          {sectionIds.map((id, index) => (
             <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              key={id}
+              href={`#${id}`}
+              css={navLinkStyle(activeIdx === index)}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection(index);
+              }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              {id.toUpperCase()}
+            </a>
+          ))}
+        </aside>
+
+        <main css={mainWrapperStyle}>
+          {data_main.map((sec) => (
+            <BasicSection
+              key={sec.id}
+              sec={sec}
+              // 마우스 클릭 시 다음 섹션 이동을 위해 index 전달 (선택사항)
+              onNext={() => scrollToSection(activeIdxRef.current + 1)}
+              sectionRef={() => {}}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          ))}
+
+          {/* 컨택트 섹션 id="contact"가 내부 <section>에 반드시 있어야 함 */}
+          <ContactSection sectionRef={() => {}} />
+        </main>
+      </div>
+    </>
   );
 }
+
+const pageContainerStyle = css({
+  height: "100vh",
+  width: "100%",
+  position: "relative",
+  overflow: "hidden", // 내부 mainWrapper에서만 움직이도록 설정
+});
+
+const mainWrapperStyle = css({
+  height: "100%",
+  width: "100%",
+});
+
+// asideStyle, navLinkStyle은 기존과 동일하되 z-index 확인
+const asideStyle = css({
+  position: "fixed",
+  right: "40px",
+  top: "50%",
+  transform: "translateY(-50%)",
+  zIndex: 1000, // 최상단 유지
+  display: "flex",
+  flexDirection: "column",
+  gap: "1.5rem",
+  "@media (max-width: 768px)": { display: "none" },
+});
+
+const navLinkStyle = (isActive: boolean) =>
+  css({
+    fontSize: "0.7rem",
+    textDecoration: "none",
+    color: isActive ? "#fff" : "rgba(255,255,255,0.4)",
+    fontWeight: isActive ? "bold" : "normal",
+    transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+    textAlign: "right",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    "&::after": {
+      content: '""',
+      display: "inline-block",
+      width: isActive ? "30px" : "0px",
+      height: "1px",
+      background: "white",
+      marginLeft: "10px",
+      transition: "all 0.4s ease",
+    },
+  });
