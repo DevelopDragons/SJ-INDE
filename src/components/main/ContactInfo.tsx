@@ -27,7 +27,7 @@ export default function ContactInfo({ label, value, href }: ContactInfoProps) {
       })}
     >
       <span
-        css={css({ width: 150, fontWeight: 400, opacity: 0.75, flexShrink: 0 })}
+        css={css({ width: 100, fontWeight: 400, opacity: 0.75, flexShrink: 0 })}
       >
         {label}
       </span>
