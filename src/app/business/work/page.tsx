@@ -1,158 +1,247 @@
+/** @jsxImportSource @emotion/react */
 "use client";
 
-export default function WorkPage() {
-  const services = [
-    {
-      title: "공간 기획 및 디자인",
-      description:
-        "브랜드 아이덴티티를 반영한 창의적이고 실용적인 공간 디자인을 제공합니다.",
-      items: ["컨셉 개발", "공간 기획", "디자인 설계", "3D 시뮬레이션"],
-    },
-    {
-      title: "인테리어 시공",
-      description: "축적된 노하우와 전문 기술력으로 완벽한 시공을 보장합니다.",
-      items: ["설계 검토", "자재 선정", "시공 관리", "품질 관리"],
-    },
-    {
-      title: "프로젝트 관리",
-      description:
-        "프로젝트 전 과정을 체계적으로 관리하여 최상의 결과를 도출합니다.",
-      items: ["일정 관리", "예산 관리", "품질 관리", "사후 관리"],
-    },
-  ];
+import { css } from "@emotion/react";
+import { motion, Variants } from "framer-motion";
+import { colors } from "@/src/styles/colors"; // 가정: styles/colors.ts 파일 존재
+import { data_work_category, data_work_process } from "@/public/data/work";
+import SectionTitle from "@/src/components/text/SectionTitle";
+import WorkCategoryCard from "@/src/components/work/CategoryCard";
+import PageTitle from "@/src/components/text/PageTitle";
+import WorkProcessCard from "@/src/components/work/ProcessCard";
 
-  const process = [
-    {
-      step: "01",
-      title: "상담 및 현장 조사",
-      description: "고객의 요구사항을 파악하고 현장을 정밀하게 분석합니다.",
+export default function WorkPage() {
+  // Framer Motion 애니메이션 Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1, // 자식 요소들이 순차적으로 애니메이션되도록
+      },
     },
-    {
-      step: "02",
-      title: "컨셉 제안",
-      description: "브랜드와 공간의 특성을 고려한 창의적인 컨셉을 제안합니다.",
-    },
-    {
-      step: "03",
-      title: "디자인 개발",
-      description: "승인된 컨셉을 바탕으로 상세 디자인을 개발합니다.",
-    },
-    {
-      step: "04",
-      title: "시공 및 감리",
-      description: "전문 시공팀이 설계도에 따라 정확하게 시공합니다.",
-    },
-    {
-      step: "05",
-      title: "완공 및 인도",
-      description: "최종 점검 후 고객에게 완벽한 공간을 인도합니다.",
-    },
-    {
-      step: "06",
-      title: "A/S 및 사후관리",
-      description: "완공 후에도 지속적인 관리와 지원을 제공합니다.",
-    },
-  ];
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 50 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  };
 
   return (
-    <div className="pt-20">
-      {/* Hero Section */}
-      <section className="relative h-[50vh] bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">WORK</h1>
-          <p className="text-xl text-gray-300">사업 분야</p>
-        </div>
-      </section>
+    <div css={workPageContainerStyle}>
+      {/* Page Title Section */}
+      <PageTitle title={"WORK"} subTitle={"사업 분야 및 프로세스"} />
 
-      {/* Services Section */}
-      <section className="py-24 bg-white">
-        <div className="container-custom max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="text-4xl font-bold mb-6">사업 분야</h2>
-            <div className="h-1 w-20 bg-accent mx-auto mb-8"></div>
-            <p className="text-lg text-gray-600">
-              SJ INDE는 다양한 분야에서 전문적인 서비스를 제공합니다
-            </p>
-          </div>
+      {/* Category Section */}
+      <section css={categorySectionStyle}>
+        <div css={containerCustomStyle}>
+          <SectionTitle
+            title={"Work Category"}
+            subTitle={
+              "선준아이디는 다양한 분야에서 전문적인 서비스를 제공합니다"
+            }
+            underline={true}
+            variants={itemVariants}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <div
+          <motion.div
+            css={categoryGridStyle}
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            {data_work_category.map((item, index) => (
+              <WorkCategoryCard
                 key={index}
-                className="bg-gray-50 p-8 rounded-lg hover:shadow-xl transition-shadow"
-              >
-                <div className="text-5xl font-bold text-accent mb-4 opacity-20">
-                  {String(index + 1).padStart(2, "0")}
-                </div>
-                <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
-                <p className="text-gray-600 mb-6">{service.description}</p>
-                <ul className="space-y-2">
-                  {service.items.map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      className="flex items-center text-gray-700"
-                    >
-                      <span className="w-2 h-2 bg-accent rounded-full mr-3"></span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                index={index}
+                category={item}
+                variants={itemVariants}
+              />
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Process Section */}
-      <section id="process" className="py-24 bg-gray-50">
-        <div className="container-custom max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="text-4xl font-bold mb-6">디자인 프로세스</h2>
-            <div className="h-1 w-20 bg-accent mx-auto mb-8"></div>
-            <p className="text-lg text-gray-600">
-              체계적인 프로세스로 최상의 결과를 제공합니다
-            </p>
-          </div>
+      <section id="process" css={processSectionStyle}>
+        <div css={containerCustomStyle}>
+          <SectionTitle
+            title={"Work Process"}
+            subTitle={"프로젝트의 전 과정을 단계별로 체계적으로 관리합니다."}
+            underline={true}
+            variants={itemVariants}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {process.map((item, index) => (
-              <div
+          <motion.div
+            css={processGridStyle}
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+          >
+            {data_work_process.map((item, index) => (
+              <WorkProcessCard
                 key={index}
-                className="bg-white p-8 rounded-lg shadow-md relative overflow-hidden group hover:shadow-xl transition-all"
-              >
-                <div className="absolute top-0 right-0 text-8xl font-bold text-gray-100 opacity-50 -mr-4 -mt-4 group-hover:text-accent group-hover:opacity-20 transition-all">
-                  {item.step}
-                </div>
-                <div className="relative z-10">
-                  <div className="text-3xl font-bold text-accent mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
-                </div>
-              </div>
+                index={index}
+                process={item}
+                variants={itemVariants}
+              />
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-primary text-white">
-        <div className="container-custom max-w-4xl text-center">
-          <h2 className="text-4xl font-bold mb-6">
-            프로젝트를 시작할 준비가 되셨나요?
-          </h2>
-          <p className="text-xl mb-8 text-gray-300">
-            SJ INDE와 함께 가치 있는 공간을 만들어보세요
-          </p>
-          <a
-            href="/contact"
-            className="inline-block px-12 py-4 bg-white text-primary font-bold rounded-none hover:bg-gray-100 transition-colors"
+      {/* CTA(Call to Action) Section */}
+      <section css={ctaSectionStyle}>
+        <div css={containerCustomStyle}>
+          <motion.div
+            css={ctaContentStyle}
+            variants={itemVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.3 }}
           >
-            문의하기
-          </a>
+            <h2 css={ctaTitleStyle}>프로젝트를 시작할 준비가 되셨나요?</h2>
+            <p css={ctaDescriptionStyle}>
+              선준아이디와 함께 가치 있는 공간을 만들어보세요
+            </p>
+            <motion.a
+              href="/contact"
+              css={ctaButtonStyle}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              문의하기
+            </motion.a>
+          </motion.div>
         </div>
       </section>
     </div>
   );
 }
+
+// --- Styles ---
+
+const workPageContainerStyle = css`
+  padding-top: 80px; /* 고정 헤더가 있다면 */
+`;
+
+const containerCustomStyle = css`
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+
+  @media (max-width: 768px) {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+`;
+
+// Category Section
+const categorySectionStyle = css`
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+  background-color: ${colors.white};
+`;
+
+const categoryGridStyle = css`
+  display: grid;
+  grid-template-columns: 1fr; /* 모바일: 1열 */
+  gap: 2rem;
+
+  /* 태블릿 및 작은 노트북 (768px 이상) */
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr); /* 2열 */
+  }
+
+  /* 데스크탑 (1024px 이상) */
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr); /* 3열 */
+  }
+`;
+// Process Section
+const processSectionStyle = css`
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+  background-color: ${colors.gray[100]};
+`;
+
+const processGridStyle = css`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+`;
+
+const processCardStyle = css`
+  background-color: ${colors.white};
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-5px);
+  }
+`;
+
+// CTA Section
+const ctaSectionStyle = css`
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+  background-color: ${colors.primary};
+  color: ${colors.white};
+`;
+
+const ctaContentStyle = css`
+  max-width: 896px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+`;
+
+const ctaTitleStyle = css`
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+`;
+
+const ctaDescriptionStyle = css`
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  color: ${colors.gray[300]};
+`;
+
+const ctaButtonStyle = css`
+  display: inline-block;
+  padding: 1rem 3rem;
+  background-color: ${colors.white};
+  color: ${colors.primary};
+  font-weight: 700;
+  border-radius: 0;
+  text-decoration: none;
+  transition:
+    background-color 0.3s ease-in-out,
+    transform 0.2s ease-in-out;
+
+  &:hover {
+    background-color: ${colors.gray[100]};
+  }
+`;
