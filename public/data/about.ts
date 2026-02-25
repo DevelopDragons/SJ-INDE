@@ -8,11 +8,6 @@ interface BusinessCategory {
   desc: string;
 }
 
-interface ContactDataSet {
-  label: string;
-  value: string | string[];
-}
-
 export const data_about: About = {
   desc: `우리는 건축과 인테리어를 기반으로 공간의 본질을 설계하는 디자인 스튜디오입니다.
   외장, 인테리어, 전시, 디스플레이, 가구, 그래픽에 이르기까지 공간 전반을 아우르며,

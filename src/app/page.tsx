@@ -14,6 +14,20 @@ export default function HomePage() {
 
   const sectionIds = [...data_main.map((d) => d.id), "contact"];
 
+  useEffect(() => {
+    // 1. 메인 페이지 진입 시 스크롤 차단
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.height = "100%";
+
+    return () => {
+      // 2. 다른 페이지로 이동(Unmount) 시 스크롤 복구
+      document.documentElement.style.overflow = "auto";
+      document.body.style.overflow = "auto";
+      document.body.style.height = "auto";
+    };
+  }, []);
+
   // 인덱스 이동 함수
   const scrollToSection = useCallback(
     (index: number) => {
