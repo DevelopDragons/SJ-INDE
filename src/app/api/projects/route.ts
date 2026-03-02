@@ -8,7 +8,14 @@ import { ResultSetHeader } from "mysql2";
 // 전체 프로젝트 조회 - GET
 export async function GET() {
     try {
-        const [rows] = await pool.query("select a.id, a.title, a.subTitle, a.updatedAt, GROUP_CONCAT(b.originName) as originNames from project a left join files b on a.id = b.project_id group by a.id;");
+        const [rows] = await pool.query(`
+            SELECT 
+                a.id, a.title, a.subTitle, a.updatedAt, 
+                GROUP_CONCAT(b.saveName) as saveNames 
+            FROM project a 
+            LEFT JOIN files b ON a.id = b.project_id 
+            GROUP BY a.id;
+        `);
 
         return new Response(
             JSON.stringify(rows),
@@ -30,7 +37,6 @@ export async function GET() {
 // 프로젝트 업로드 - POST
 export async function POST(req: Request) {
     try {
-        // request 로 받은 데이터 파싱 작업
         const data = await req.formData();
         
         const title = data.get("title") as string;
@@ -38,17 +44,22 @@ export async function POST(req: Request) {
         const files = data.getAll("files") as File[];
         const now = new Date();
 
-        // 데이터 유효성 검사(제목, 부제목 파일)
-        if(!title || !subTitle || !files) {
-            return new Response(
-                JSON.stringify({
-                    message: "제목과 부제목, 이미지는 필수값입니다."
-                }),
-                { status: 400 }
-            )
+        if(!title || !subTitle || !files || files.length === 0) {
+            return NextResponse.json({
+                message: "제목과 부제목, 이미지는 필수값입니다."
+            }, { status: 400 });
         }
 
-        // 게시글 생성
+        // 1. 저장 경로를 프로젝트 루트의 public/uploads로 고정
+        // process.cwd()는 프로젝트의 최상위 루트를 가리킵니다.
+        const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+        // 2. 폴더가 없으면 생성 (recursive 옵션으로 하위까지 생성)
+        if(!fs.existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true });
+        }
+
+        // 3. 프로젝트(게시글) DB 생성
         const [result] = await pool.query(
             "INSERT INTO project (title, subTitle, createdAt, updatedAt) VALUES (?, ?, ?, ?)",
             [title, subTitle, now, now]
@@ -56,34 +67,27 @@ export async function POST(req: Request) {
 
         const projectId = result.insertId;
 
-        // 파일 저장 설정
-        const envPath = process.env.FILE_UPLOAD_PATH || "public/uploads";
-        const uploadDir = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
-
-        // 저장 경로가 존재하지 않으면 생성
-        if(!fs.existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true });
-        }
-
-        // 다중 파일 처리(물리 저장 + DB 저장)
+        // 4. 다중 파일 처리 (물리적 저장 + 파일 DB 저장)
         const fileUploadResults = await Promise.all(
             files.map(async (file) => {
                 const ext = path.extname(file.name);
-                const saveName = `${crypto.randomUUID()}${ext}`;
+                const saveName = `${crypto.randomUUID()}${ext}`; // 유니크한 파일명 생성
                 const buffer = Buffer.from(await file.arrayBuffer());
 
-                // 로컬에 파일 저장
-                await writeFile(path.join(uploadDir, saveName), buffer);
+                // 실제 물리적 저장 위치: public/uploads/uuid.ext
+                const filePath = path.join(uploadDir, saveName);
+                await writeFile(filePath, buffer);
 
-                // DB에 파일 저장
+                // DB에는 나중에 접근하기 쉽도록 saveName을 저장
                 await pool.query(
                     "INSERT INTO files (project_id, originName, saveName, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?)",
                     [projectId, file.name, saveName, now, now]
                 );
 
-                return { originName: file.name, saveName};
+                return { originName: file.name, saveName };
             })
         );
+
         return NextResponse.json({
             message: "success",
             projectInfo: {
@@ -91,12 +95,10 @@ export async function POST(req: Request) {
                 title, 
                 files: fileUploadResults
             }
-        }, {status: 201});
+        }, { status: 201 });
+
     } catch (err) {
-        console.error(err);
-        return new Response(
-            JSON.stringify({ message: "fail" }),
-            { status : 500}
-        )
+        console.error("Upload Error:", err);
+        return NextResponse.json({ message: "서버 에러가 발생했습니다." }, { status: 500 });
     }
 }

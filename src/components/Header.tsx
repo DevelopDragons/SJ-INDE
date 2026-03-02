@@ -14,12 +14,11 @@ import MobileNav from "../components/nav/MobileNav";
 import MenuToggleButton from "../components/nav/MenuToggleButton";
 
 export default function Header() {
-  const [mounted, setMounted] = useState(false); // Hydration 에러 방지용
+  const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
 
-  // 1. 컴포넌트 마운트 확인 (Hydration 에러 해결 핵심)
   useEffect(() => {
     setMounted(true);
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -31,9 +30,9 @@ export default function Header() {
     document.body.style.overflow = isMenuOpen ? "hidden" : "unset";
   }, [isMenuOpen]);
 
-  // 마운트되기 전에는 에러 방지를 위해 기본 형태만 반환하거나 null 반환
   if (!mounted) return null;
 
+  // 메인("/")이 아니거나 스크롤이 되었을 때 검은색 헤더 활성화
   const isBlackHeader = isScrolled || pathname !== "/";
 
   const headerStyle = css({
@@ -45,10 +44,14 @@ export default function Header() {
     height: isScrolled ? "70px" : "90px",
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between", // 모바일/데스크탑 모두 양끝 배치를 위해 추가
-    transition: "all 0.5s cubic-bezier(0.19, 1, 0.22, 1)",
-    backgroundColor: "transparent",
+    justifyContent: "space-between",
+    transition: "all 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
+    
+    // 핵심 수정: 메인이 아닐 때는 투명이 아닌 colors.black(또는 반투명 검정) 적용
+    backgroundColor: isBlackHeader ? "rgba(0, 0, 0, 0.95)" : "transparent",
     backdropFilter: isBlackHeader ? "blur(15px)" : "none",
+    borderBottom: isBlackHeader ? `1px solid ${colors.gray[900]}` : "none",
+    
     padding: "0 60px",
     "@media (max-width: 1024px)": { padding: "0 30px" },
     "@media (max-width: 768px)": {
@@ -60,22 +63,20 @@ export default function Header() {
   return (
     <>
       <header css={headerStyle}>
-        {/* 로고: 텍스트 대신 이미지 적용 */}
         <Link href="/" css={logoWrapperStyle}>
           <Image
-            src="/logo/logo_white_text.png" // Footer와 동일한 경로
+            src="/logo/logo_white_text.png"
             alt="SJ INDE"
-            width={120} // 스크롤 시 로고 크기도 살짝 축소
-            height={120}
-            priority // 헤더 로고이므로 우선순위 로딩
+            // 스크롤 시 로고 크기 살짝 조정 로직 추가 가능
+            width={isScrolled ? 100 : 120} 
+            height={isScrolled ? 100 : 120}
+            priority
             style={{ objectFit: "contain", transition: "all 0.3s ease" }}
           />
         </Link>
 
-        {/* 데스크탑 메뉴: DesktopNav 내부에서 marginLeft: auto로 밀어주고 있음 */}
         <DesktopNav menuItems={menuItems} pathname={pathname} />
 
-        {/* 모바일 토글 버튼: 모바일에서는 justify-content: space-between에 의해 자동으로 우측 배치 */}
         <MenuToggleButton
           isOpen={isMenuOpen}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
