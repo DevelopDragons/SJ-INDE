@@ -30,7 +30,7 @@ export default function WorkPage() {
   return (
     <div css={workPageContainerStyle}>
       {/* Page Title Section */}
-      <PageTitle title={"WORK"} subTitle={"사업 분야 및 프로세스"} />
+      <PageTitle title={"BUSINESS"} subTitle={"사업 분야 및 프로세스"} />
 
       {/* Category Section */}
       <section css={categorySectionStyle}>
