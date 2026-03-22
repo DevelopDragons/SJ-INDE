@@ -1,158 +1,261 @@
+/** @jsxImportSource @emotion/react */
 "use client";
 
-export default function CompanyOrganizationPage() {
-  const services = [
-    {
-      title: "공간 기획 및 디자인",
-      description:
-        "브랜드 아이덴티티를 반영한 창의적이고 실용적인 공간 디자인을 제공합니다.",
-      items: ["컨셉 개발", "공간 기획", "디자인 설계", "3D 시뮬레이션"],
-    },
-    {
-      title: "인테리어 시공",
-      description: "축적된 노하우와 전문 기술력으로 완벽한 시공을 보장합니다.",
-      items: ["설계 검토", "자재 선정", "시공 관리", "품질 관리"],
-    },
-    {
-      title: "프로젝트 관리",
-      description:
-        "프로젝트 전 과정을 체계적으로 관리하여 최상의 결과를 도출합니다.",
-      items: ["일정 관리", "예산 관리", "품질 관리", "사후 관리"],
-    },
-  ];
+import { css } from "@emotion/react";
+import { colors } from "@/src/styles/colors";
+import PageTitle from "@/src/components/text/PageTitle";
+import { data_organization } from "@/public/data/organization";
 
-  const process = [
-    {
-      step: "01",
-      title: "상담 및 현장 조사",
-      description: "고객의 요구사항을 파악하고 현장을 정밀하게 분석합니다.",
-    },
-    {
-      step: "02",
-      title: "컨셉 제안",
-      description: "브랜드와 공간의 특성을 고려한 창의적인 컨셉을 제안합니다.",
-    },
-    {
-      step: "03",
-      title: "디자인 개발",
-      description: "승인된 컨셉을 바탕으로 상세 디자인을 개발합니다.",
-    },
-    {
-      step: "04",
-      title: "시공 및 감리",
-      description: "전문 시공팀이 설계도에 따라 정확하게 시공합니다.",
-    },
-    {
-      step: "05",
-      title: "완공 및 인도",
-      description: "최종 점검 후 고객에게 완벽한 공간을 인도합니다.",
-    },
-    {
-      step: "06",
-      title: "A/S 및 사후관리",
-      description: "완공 후에도 지속적인 관리와 지원을 제공합니다.",
-    },
-  ];
+export default function CompanyOrganizationPage() {
+  const deptCount = data_organization.children?.length || 1;
 
   return (
-    <div className="pt-20">
-      {/* Hero Section */}
-      <section className="relative h-[50vh] bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">WORK</h1>
-          <p className="text-xl text-gray-300">사업 분야</p>
-        </div>
-      </section>
+    <div css={orgPageWrapperStyle}>
+      <PageTitle
+        title={"ORGANIZATION"}
+        subTitle={"전문적인 협업 시스템으로 최상의 공간을 만듭니다"}
+      />
 
-      {/* Services Section */}
-      <section className="py-24 bg-white">
-        <div className="container-custom max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="text-4xl font-bold mb-6">사업 분야</h2>
-            <div className="h-1 w-20 bg-accent mx-auto mb-8"></div>
-            <p className="text-lg text-gray-600">
-              SJ INDE는 다양한 분야에서 전문적인 서비스를 제공합니다
-            </p>
-          </div>
+      <section css={orgContentSectionStyle}>
+        <div css={containerStyle}>
+          {/* 1. 데스크탑/태블릿용 트리 구조 (601px 이상) */}
+          <div css={desktopTreeWrapper}>
+            <div css={rootWrapperStyle}>
+              <div css={nodeBoxStyle("root")}>{data_organization.name}</div>
+              <div css={verticalLineStyle} />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 p-8 rounded-lg hover:shadow-xl transition-shadow"
-              >
-                <div className="text-5xl font-bold text-accent mb-4 opacity-20">
-                  {String(index + 1).padStart(2, "0")}
+            {/* 수평선이 포함된 그리드 */}
+            <div css={deptGridStyle}>
+              {data_organization.children?.map((dept) => (
+                <div key={dept.id} css={deptColumnStyle}>
+                  {/* 각 부서 상단 수직선 */}
+                  <div css={verticalLineShortStyle} />
+                  <div css={nodeBoxStyle("department")}>{dept.name}</div>
+
+                  {dept.children && (
+                    <div css={teamGroupStyle}>
+                      {dept.children.map((team) => (
+                        <div key={team.id} css={nodeBoxStyle("team")}>
+                          {team.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
-                <p className="text-gray-600 mb-6">{service.description}</p>
-                <ul className="space-y-2">
-                  {service.items.map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      className="flex items-center text-gray-700"
-                    >
-                      <span className="w-2 h-2 bg-accent rounded-full mr-3"></span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Process Section */}
-      <section id="process" className="py-24 bg-gray-50">
-        <div className="container-custom max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="text-4xl font-bold mb-6">디자인 프로세스</h2>
-            <div className="h-1 w-20 bg-accent mx-auto mb-8"></div>
-            <p className="text-lg text-gray-600">
-              체계적인 프로세스로 최상의 결과를 제공합니다
-            </p>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {process.map((item, index) => (
-              <div
-                key={index}
-                className="bg-white p-8 rounded-lg shadow-md relative overflow-hidden group hover:shadow-xl transition-all"
-              >
-                <div className="absolute top-0 right-0 text-8xl font-bold text-gray-100 opacity-50 -mr-4 -mt-4 group-hover:text-accent group-hover:opacity-20 transition-all">
-                  {item.step}
-                </div>
-                <div className="relative z-10">
-                  <div className="text-3xl font-bold text-accent mb-4">
-                    {item.step}
+          {/* 2. 모바일용 카드 레이아웃 (600px 이하) */}
+          <div css={mobileCardWrapper}>
+            <div css={mobileRootBox}>{data_organization.name}</div>
+            <div css={mobileGridStyle}>
+              {data_organization.children?.map((dept) => (
+                <div key={dept.id} css={mobileDeptCard}>
+                  <div css={mobileDeptTitle}>{dept.name}</div>
+                  <div css={mobileDivider} />
+                  <div css={mobileTeamList}>
+                    {dept.children?.map((team) => (
+                      <span key={team.id}>{team.name}</span>
+                    ))}
                   </div>
-                  <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-primary text-white">
-        <div className="container-custom max-w-4xl text-center">
-          <h2 className="text-4xl font-bold mb-6">
-            프로젝트를 시작할 준비가 되셨나요?
-          </h2>
-          <p className="text-xl mb-8 text-gray-300">
-            SJ INDE와 함께 가치 있는 공간을 만들어보세요
-          </p>
-          <a
-            href="/contact"
-            className="inline-block px-12 py-4 bg-white text-primary font-bold rounded-none hover:bg-gray-100 transition-colors"
-          >
-            문의하기
-          </a>
         </div>
       </section>
     </div>
   );
 }
+
+// --- 공통 Styles ---
+
+const orgPageWrapperStyle = css`
+  padding-top: 80px;
+`;
+
+const orgContentSectionStyle = css`
+  width: 100%;
+  background-color: ${colors.white};
+  overflow-x: auto; /* 트리 구조일 때 최소 너비 미달 시 스크롤 보장 */
+`;
+
+const containerStyle = css`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 80px 2rem 120px 2rem;
+  @media (max-width: 600px) {
+    padding: 40px 1rem;
+  }
+`;
+
+// --- [데스크탑 전용] 트리 구조 스타일 최적화 ---
+
+const desktopTreeWrapper = css`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 800px; /* 트리 구조 유지 최소 너비 */
+  @media (max-width: 1024px) {
+    display: none;
+  }
+`;
+
+const rootWrapperStyle = css`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+`;
+
+const deptGridStyle = css`
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 1fr);
+  gap: 20px;
+  width: 100%;
+  position: relative;
+
+  /* 수평선: 전체 너비에 긋기 */
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: ${colors.gray[300]};
+    z-index: 0;
+  }
+`;
+
+const deptColumnStyle = css`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+
+  /* 첫 번째 부서의 왼쪽 수평선 제거 (마스킹) */
+  &:first-of-type::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 2px;
+    background-color: ${colors.white};
+    z-index: 1;
+  }
+
+  /* 마지막 부서의 오른쪽 수평선 제거 (마스킹) */
+  &:last-of-type::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 2px;
+    background-color: ${colors.white};
+    z-index: 1;
+  }
+`;
+
+const nodeBoxStyle = (type: "root" | "department" | "team") => css`
+  width: ${type === "root" ? "240px" : "100%"};
+  padding: 1rem;
+  background-color: ${type === "root" ? colors.primary : colors.white};
+  color: ${type === "root" ? colors.white : colors.gray[800]};
+  border: 2px solid ${type === "root" ? colors.primary : colors.gray[200]};
+  text-align: center;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  word-break: keep-all;
+`;
+
+/* 선 두께를 2px로 고정하여 끊김 현상 방지 */
+const verticalLineStyle = css`
+  width: 2px;
+  height: 50px;
+  background-color: ${colors.gray[300]};
+`;
+
+const verticalLineShortStyle = css`
+  width: 2px;
+  height: 30px;
+  background-color: ${colors.gray[300]};
+`;
+
+const teamGroupStyle = css`
+  margin-top: 15px;
+  width: 100%;
+  padding: 12px;
+  background-color: ${colors.gray[100]};
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+// --- [모바일 전용] 스타일 (기존과 동일하되 시인성 강화) ---
+
+const mobileCardWrapper = css`
+  display: none;
+  width: 100%;
+  @media (max-width: 1024px) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+`;
+
+const mobileRootBox = css`
+  background-color: ${colors.primary};
+  color: ${colors.white};
+  padding: 18px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 4px;
+`;
+
+const mobileGridStyle = css`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+`;
+
+const mobileDeptCard = css`
+  background-color: ${colors.white};
+  border: 1px solid ${colors.gray[200]};
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 4px;
+`;
+
+const mobileDeptTitle = css`
+  font-weight: 700;
+  color: ${colors.gray[800]};
+  font-size: 0.95rem;
+`;
+const mobileDivider = css`
+  width: 20px;
+  height: 1px;
+  background-color: ${colors.gray[300]};
+  margin: 8px 0;
+`;
+const mobileTeamList = css`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  color: ${colors.gray[600]};
+`;
