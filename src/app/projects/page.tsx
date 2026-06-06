@@ -9,7 +9,6 @@ import { colors } from "@/src/styles/colors";
 import PageTitle from "@/src/components/text/PageTitle";
 import ProjectListCard from "@/src/components/project/ProjectListCard";
 
-// 1. 안전한 인터페이스 선언
 interface Project {
   id: number;
   title: string;
@@ -20,35 +19,29 @@ interface Project {
 export default function ProjectPage() {
   const router = useRouter();
   
-  // 2. 상태 관리 표준화
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(9);
   
-  // 검색용 투트랙 상태 분리
   const [tempSearchTerm, setTempSearchTerm] = useState<string>(""); 
   const [searchTerm, setSearchTerm] = useState<string>(""); 
 
-  // 관리자 접근 라우팅 핸들러
   const handleAdminAccess = useCallback(() => {
-    router.push("/login"); 
+    router.push("/projects/write"); 
   }, [router]);
 
-  // 3. 반응형 다이나믹 아이템 개수 조정 (안전한 윈도우 스크린 체크)
   useEffect(() => {
     const handleResize = () => {
       if (typeof window !== "undefined") {
         setItemsPerPage(window.innerWidth <= 1024 ? 10 : 9);
       }
     };
-
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 4. Framer Motion 애니메이션 기하학 변수 선언
   const revealVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: {
@@ -66,7 +59,6 @@ export default function ProjectPage() {
     },
   };
 
-  // 5. 비동기 백엔드 API 데이터 페칭
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
@@ -88,12 +80,9 @@ export default function ProjectPage() {
     return () => { isMounted = false; };
   }, []);
 
-  // 6. 공백/띄어쓰기 지능형 무시 및 대소문자 예외 처리 비즈니스 로직
   const filteredProjects = useMemo(() => {
     if (!searchTerm || !searchTerm.trim()) return projects;
-
     const normalizedSearch = searchTerm.replace(/\s+/g, "").toLowerCase();
-
     return projects.filter((project) => {
       if (!project.title) return false;
       const normalizedTitle = project.title.replace(/\s+/g, "").toLowerCase();
@@ -101,7 +90,6 @@ export default function ProjectPage() {
     });
   }, [projects, searchTerm]);
 
-  // 7. 파생 데이터 메모이제이션 (페이지네이션 슬라이싱)
   const currentItems = useMemo(() => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -112,16 +100,31 @@ export default function ProjectPage() {
     return Math.ceil(filteredProjects.length / itemsPerPage);
   }, [filteredProjects.length, itemsPerPage]);
 
-  // 8. 기능 확장형 유저 인터랙션 제어 핸들러
+  // ✨ 트렌디한 페이지네이션 번호 노출 알고리즘 (최대 5개씩 묶음 표출)
+  const paginationRange = useMemo(() => {
+    if (totalPages <= 10) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    // 10페이지가 넘을 경우 현재 선택된 페이지 주위로 유동적 그룹 맵핑
+    const currentGroup = Math.ceil(currentPage / 5);
+    const startPage = (currentGroup - 1) * 5 + 1;
+    const endPage = Math.min(startPage + 4, totalPages);
+    
+    const range = [];
+    for (let i = startPage; i <= endPage; i++) {
+      range.push(i);
+    }
+    return range;
+  }, [totalPages, currentPage]);
+
   const executeSearch = () => {
     setSearchTerm(tempSearchTerm);
     setCurrentPage(1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      executeSearch();
-    }
+    if (e.key === "Enter") executeSearch();
   };
 
   const handleClearSearch = () => {
@@ -137,10 +140,6 @@ export default function ProjectPage() {
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
-
   return (
     <div css={projectPageContainerStyle}>
       <PageTitle
@@ -150,28 +149,18 @@ export default function ProjectPage() {
 
       <main css={mainContentStyle}>
         <div css={contentWrapperStyle}>
+          {/* 상단 배너 섹션 */}
           <section css={projectIntroSectionStyle}>
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-              css={introContentStyle}
-            >
-              <motion.span css={topLabelStyle} variants={revealVariants}>
-                ARCHIVE
-              </motion.span>
+            <motion.div variants={containerVariants} initial="hidden" animate="show" css={introContentStyle}>
+              <motion.span css={topLabelStyle} variants={revealVariants}>ARCHIVE</motion.span>
               <motion.h2 css={bigSloganStyle} variants={revealVariants}>
-                Crafting <span className="outline">Inspiring</span>{" "}
+                <span className="accent">Crafting</span> <span className="outline">Inspiring</span>{" "}
                 <span className="accent">
                   Spaces
                   <span 
                     onDoubleClick={handleAdminAccess}
-                    style={{ 
-                      userSelect: 'none', 
-                      cursor: 'default',
-                      display: 'inline-block',
-                      paddingRight: '10px'
-                    }}
+                    style={{ userSelect: 'none', cursor: 'pointer', display: 'inline-block', paddingLeft: '2px', paddingRight: '10px' }}
+                    title="관리자 아카이브 등록"
                   >
                     .
                   </span>
@@ -180,7 +169,7 @@ export default function ProjectPage() {
             </motion.div>
           </section>
 
-          {/* 깔끔하게 정돈된 테마 검색 바 */}
+          {/* 테마 검색 바 */}
           <section css={searchSectionStyle}>
             <div css={searchContainerStyle}>
               <input
@@ -214,7 +203,7 @@ export default function ProjectPage() {
                   initial="hidden"
                   animate="show"
                   exit={{ opacity: 0, y: -20 }}
-                  onContextMenu={handleContextMenu}
+                  onContextMenu={(e) => e.preventDefault()}
                 >
                   {currentItems.length > 0 ? (
                     <div css={[gridContainerStyle, imageProtectorStyle]}>
@@ -230,9 +219,33 @@ export default function ProjectPage() {
                 </motion.section>
               </AnimatePresence>
 
+              {/* ✨ 고도화된 반응형 트렌디 페이지네이션 바 */}
               {totalPages > 1 && (
                 <div css={paginationContainerStyle}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                  {/* 처음으로 이동 (10페이지 이상일 때만 노출 가중) */}
+                  {totalPages > 10 && (
+                    <button 
+                      onClick={() => handlePageChange(1)} 
+                      disabled={currentPage === 1}
+                      css={arrowNavButtonStyle}
+                      aria-label="First Page"
+                    >
+                      &laquo;
+                    </button>
+                  )}
+
+                  {/* 이전 페이지로 이동 */}
+                  <button 
+                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))} 
+                    disabled={currentPage === 1}
+                    css={arrowNavButtonStyle}
+                    aria-label="Previous Page"
+                  >
+                    &lsaquo;
+                  </button>
+
+                  {/* 페이지 번호 루프 */}
+                  {paginationRange.map((num) => (
                     <button
                       key={num}
                       onClick={() => handlePageChange(num)}
@@ -241,6 +254,28 @@ export default function ProjectPage() {
                       {num}
                     </button>
                   ))}
+
+                  {/* 다음 페이지로 이동 */}
+                  <button 
+                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))} 
+                    disabled={currentPage === totalPages}
+                    css={arrowNavButtonStyle}
+                    aria-label="Next Page"
+                  >
+                    &rsaquo;
+                  </button>
+
+                  {/* 끝으로 이동 (10페이지 이상일 때만 노출 가중) */}
+                  {totalPages > 10 && (
+                    <button 
+                      onClick={() => handlePageChange(totalPages)} 
+                      disabled={currentPage === totalPages}
+                      css={arrowNavButtonStyle}
+                      aria-label="Last Page"
+                    >
+                      &raquo;
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -251,28 +286,43 @@ export default function ProjectPage() {
   );
 }
 
-// --- 안정성이 확보된 가독성 우선 스펙트럼 CSS Styles ---
+// --- 🎨 CSS Styles 구역 ---
 
 const projectPageContainerStyle = css`
-  background-color: ${colors?.white || '#ffffff'};
+  background-color: ${colors?.white || '#ffffff'}; 
   min-height: 100vh;
   padding-top: 90px;
+  position: relative;
+
+  @media (max-width: 1024px) {
+    padding-top: 80px;
+    margin-top: -1px;
+  }
+  @media (max-width: 768px) {
+    padding-top: 60px;
+    margin-top: -1.5px;
+  }
 `;
 
 const mainContentStyle = css`
-  padding-bottom: 100px;
+  width: 100%;
+  background-color: ${colors?.white || '#ffffff'}; 
+  padding-bottom: 120px;
 `;
 
 const contentWrapperStyle = css`
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 50px;
+  background-color: ${colors?.white || '#ffffff'}; 
   @media (max-width: 768px) { padding: 0 20px; }
 `;
 
 const projectIntroSectionStyle = css`
   padding: 6rem 0 2rem 0;
   text-align: center;
+  background-color: ${colors?.white || '#ffffff'}; 
+  @media (max-width: 768px) { padding: 4rem 0 2rem 0; }
 `;
 
 const introContentStyle = css`
@@ -285,7 +335,7 @@ const topLabelStyle = css`
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.5em;
-  color: ${colors?.accent || '#c5a47e'};
+  color: ${colors?.accent || '#b13241'};
   margin-bottom: 1.5rem;
 `;
 
@@ -293,22 +343,27 @@ const bigSloganStyle = css`
   font-size: 5rem;
   font-weight: 900;
   line-height: 1.1;
-  color: ${colors?.primary || '#111111'};
+  letter-spacing: -0.01em;
+  
   .outline {
     color: transparent;
-    -webkit-text-stroke: 1.5px ${colors?.primary || '#111111'};
-    opacity: 0.3;
+    -webkit-text-stroke: 1.5px ${colors?.black || '#111111'};
+    opacity: 0.15;
   }
+  
   .accent {
-    color: ${colors?.accent || '#c5a47e'};
+    color: ${colors?.primary || '#9e0012'};
   }
-  @media (max-width: 768px) { font-size: 2.8rem; }
+  
+  @media (max-width: 768px) { font-size: 2.5rem; }
 `;
 
 const searchSectionStyle = css`
   display: flex;
   justify-content: center;
-  margin-bottom: 5rem;
+  padding-bottom: 5rem;
+  background-color: ${colors?.white || '#ffffff'}; 
+  @media (max-width: 768px) { padding-bottom: 3rem; }
 `;
 
 const searchContainerStyle = css`
@@ -323,31 +378,17 @@ const searchInputStyle = css`
   width: 100%;
   padding: 14px 55px 14px 20px;
   font-size: 0.95rem;
-  
-  /* 자연스러운 순수 딥블랙 톤으로 텍스트 색상 바인딩 */
-  color: ${colors?.gray?.[800] || '#222222'}; 
+  color: #222222; 
   background-color: ${colors?.white || '#ffffff'};
-  
-  /* 포커싱 전 기본 상태부터 선명한 테마 포인트 컬러 테두리 부여 */
-  border: 1.5px solid ${colors?.accent || '#c5a47e'};
+  border: 1.5px solid ${colors?.primary || '#9e0012'};
   border-radius: 50px;
   outline: none;
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: all 0.3s ease;
   letter-spacing: -0.02em;
 
-  &::placeholder {
-    color: ${colors?.gray?.[400] || '#aaaaaa'};
-  }
-
-  &:hover {
-    border-color: ${colors?.accent || '#c5a47e'};
-    box-shadow: 0 2px 10px rgba(197, 164, 126, 0.08);
-  }
-
-  &:focus {
-    border-color: ${colors?.accent || '#c5a47e'};
-    box-shadow: 0 4px 20px rgba(197, 164, 126, 0.16);
-  }
+  &::placeholder { color: ${colors?.gray?.[400] || '#aaaaaa'}; }
+  &:hover { box-shadow: 0 2px 10px rgba(158, 0, 18, 0.08); }
+  &:focus { box-shadow: 0 4px 20px rgba(158, 0, 18, 0.16); }
 `;
 
 const searchIconButtonStyle = css`
@@ -355,7 +396,7 @@ const searchIconButtonStyle = css`
   right: 18px;
   background: none;
   border: none;
-  color: ${colors?.accent || '#c5a47e'};
+  color: ${colors?.primary || '#9e0012'};
   opacity: 0.75;
   display: flex;
   align-items: center;
@@ -363,15 +404,7 @@ const searchIconButtonStyle = css`
   cursor: pointer;
   padding: 4px;
   transition: all 0.3s ease;
-
-  &:hover {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-
-  input:focus + & {
-    opacity: 1;
-  }
+  &:hover { opacity: 1; transform: scale(1.05); }
 `;
 
 const clearButtonStyle = css`
@@ -382,14 +415,10 @@ const clearButtonStyle = css`
   font-size: 1.3rem;
   color: ${colors?.gray?.[400] || '#aaaaaa'};
   cursor: pointer;
-  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  &:hover {
-    color: ${colors?.primary || '#111111'};
-  }
+  &:hover { color: ${colors?.black || '#111111'}; }
 `;
 
 const gridSectionStyle = css`
@@ -405,7 +434,6 @@ const gridContainerStyle = css`
     grid-template-columns: repeat(2, 1fr);
     gap: 60px 30px;
   }
-
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
     gap: 50px;
@@ -415,11 +443,7 @@ const gridContainerStyle = css`
 const imageProtectorStyle = css`
   user-select: none;
   -webkit-user-drag: none;
-  
-  img {
-    pointer-events: none;
-    -webkit-user-drag: none;
-  }
+  img { pointer-events: none; -webkit-user-drag: none; }
 `;
 
 const noDataStyle = css`
@@ -434,10 +458,11 @@ const paginationContainerStyle = css`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 8px;
   margin-top: 100px;
 `;
 
+// ✨ 활성화 유무에 따라 색상이 다이내믹하게 바뀌는 스크립트 튜닝
 const paginationButtonStyle = (isActive: boolean) => css`
   width: 40px;
   height: 40px;
@@ -445,10 +470,11 @@ const paginationButtonStyle = (isActive: boolean) => css`
   background: none;
   font-size: 1rem;
   font-weight: ${isActive ? "700" : "400"};
-  color: ${isActive ? (colors?.primary || '#111111') : (colors?.gray?.[400] || '#aaaaaa')};
+  /* 💡 현재 선택된 번호는 선준아이디의 메인 전용 색상 적용 */
+  color: ${isActive ? (colors?.primary || '#9e0012') : (colors?.gray?.[400] || '#aaaaaa')};
   cursor: pointer;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease-in-out;
 
   &::after {
     content: "";
@@ -458,11 +484,37 @@ const paginationButtonStyle = (isActive: boolean) => css`
     transform: translateX(-50%);
     width: ${isActive ? "15px" : "0"};
     height: 2px;
-    background-color: ${colors?.primary || '#111111'};
-    transition: width 0.3s ease;
+    /* 💡 하단 지시선막대도 메인 컬러 스펙 일치화 */
+    background-color: ${colors?.primary || '#9e0012'};
+    transition: width 0.25s ease-in-out;
   }
 
   &:hover {
-    color: ${colors?.primary || '#111111'};
+    color: ${colors?.primary || '#9e0012'};
+  }
+`;
+
+const arrowNavButtonStyle = css`
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  font-size: 1.2rem;
+  color: ${colors?.gray?.[500] || '#888888'};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    color: ${colors?.primary || '#9e0012'};
+    transform: scale(1.1);
+  }
+
+  &:disabled {
+    color: ${colors?.gray?.[200] || '#e0e0e0'};
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 `;
