@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { css } from "@emotion/react";
 import { motion, Variants, AnimatePresence } from "framer-motion"; 
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { colors } from "@/src/styles/colors";
 import PageTitle from "@/src/components/text/PageTitle";
 import ProjectListCard from "@/src/components/project/ProjectListCard";
 
+// 1. 안전한 인터페이스 선언
 interface Project {
   id: number;
   title: string;
@@ -18,22 +19,27 @@ interface Project {
 
 export default function ProjectPage() {
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   
-  const [itemsPerPage, setItemsPerPage] = useState(9);
+  // 2. 상태 관리 표준화
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(9);
+  
+  // 검색용 투트랙 상태 분리
+  const [tempSearchTerm, setTempSearchTerm] = useState<string>(""); 
+  const [searchTerm, setSearchTerm] = useState<string>(""); 
 
-  const handleAdminAccess = () => {
+  // 관리자 접근 라우팅 핸들러
+  const handleAdminAccess = useCallback(() => {
     router.push("/login"); 
-  };
+  }, [router]);
 
+  // 3. 반응형 다이나믹 아이템 개수 조정 (안전한 윈도우 스크린 체크)
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 1024) {
-        setItemsPerPage(10);
-      } else {
-        setItemsPerPage(9);
+      if (typeof window !== "undefined") {
+        setItemsPerPage(window.innerWidth <= 1024 ? 10 : 9);
       }
     };
 
@@ -42,6 +48,7 @@ export default function ProjectPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // 4. Framer Motion 애니메이션 기하학 변수 선언
   const revealVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: {
@@ -51,7 +58,7 @@ export default function ProjectPage() {
     },
   };
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -59,35 +66,77 @@ export default function ProjectPage() {
     },
   };
 
+  // 5. 비동기 백엔드 API 데이터 페칭
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       try {
         const res = await fetch("/api/projects", { cache: 'no-store' });
+        if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
-        const sortedData = data.sort((a: Project, b: Project) => b.id - a.id);
-        setProjects(sortedData);
-        setIsLoaded(true);
+        
+        if (isMounted && Array.isArray(data)) {
+          const sortedData = [...data].sort((a: Project, b: Project) => b.id - a.id);
+          setProjects(sortedData);
+          setIsLoaded(true);
+        }
       } catch (err) {
         console.error("Data Fetch Error:", err);
       }
     };
     fetchData();
+    return () => { isMounted = false; };
   }, []);
 
+  // 6. 공백/띄어쓰기 지능형 무시 및 대소문자 예외 처리 비즈니스 로직
+  const filteredProjects = useMemo(() => {
+    if (!searchTerm || !searchTerm.trim()) return projects;
+
+    const normalizedSearch = searchTerm.replace(/\s+/g, "").toLowerCase();
+
+    return projects.filter((project) => {
+      if (!project.title) return false;
+      const normalizedTitle = project.title.replace(/\s+/g, "").toLowerCase();
+      return normalizedTitle.includes(normalizedSearch);
+    });
+  }, [projects, searchTerm]);
+
+  // 7. 파생 데이터 메모이제이션 (페이지네이션 슬라이싱)
   const currentItems = useMemo(() => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    return projects.slice(indexOfFirstItem, indexOfLastItem);
-  }, [projects, currentPage, itemsPerPage]);
+    return filteredProjects.slice(indexOfFirstItem, indexOfLastItem);
+  }, [filteredProjects, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(projects.length / itemsPerPage);
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredProjects.length / itemsPerPage);
+  }, [filteredProjects.length, itemsPerPage]);
+
+  // 8. 기능 확장형 유저 인터랙션 제어 핸들러
+  const executeSearch = () => {
+    setSearchTerm(tempSearchTerm);
+    setCurrentPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      executeSearch();
+    }
+  };
+
+  const handleClearSearch = () => {
+    setTempSearchTerm("");
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 300, behavior: 'smooth' }); 
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 300, behavior: 'smooth' }); 
+    }
   };
 
-  // ✨ 추가: 마우스 우클릭 콘텍스트 메뉴를 원천 차단하는 핸들러
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
   };
@@ -95,8 +144,8 @@ export default function ProjectPage() {
   return (
     <div css={projectPageContainerStyle}>
       <PageTitle
-        title={"PROJECTS"}
-        subTitle={"선준아이디가 제안하는 프리미엄 공간 디자인 포트폴리오입니다."}
+        title="PROJECTS"
+        subTitle="선준아이디가 제안하는 프리미엄 공간 디자인 포트폴리오입니다."
       />
 
       <main css={mainContentStyle}>
@@ -131,20 +180,43 @@ export default function ProjectPage() {
             </motion.div>
           </section>
 
+          {/* 깔끔하게 정돈된 테마 검색 바 */}
+          <section css={searchSectionStyle}>
+            <div css={searchContainerStyle}>
+              <input
+                type="text"
+                placeholder="프로젝트 제목으로 검색"
+                value={tempSearchTerm}
+                onChange={(e) => setTempSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
+                css={searchInputStyle}
+              />
+              <button css={searchIconButtonStyle} onClick={executeSearch} aria-label="Search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                </svg>
+              </button>
+              {tempSearchTerm && (
+                <button css={clearButtonStyle} onClick={handleClearSearch} aria-label="Clear Search">
+                  &times;
+                </button>
+              )}
+            </div>
+          </section>
+
           {isLoaded && (
             <>
               <AnimatePresence mode="wait">
                 <motion.section 
-                  key={`${currentPage}-${itemsPerPage}`}
+                  key={`${currentPage}-${itemsPerPage}-${searchTerm}`}
                   css={gridSectionStyle}
                   variants={containerVariants}
                   initial="hidden"
                   animate="show"
                   exit={{ opacity: 0, y: -20 }}
-                  onContextMenu={handleContextMenu} // ✨ 리스트 섹션 영역 우클릭 메뉴 차단
+                  onContextMenu={handleContextMenu}
                 >
                   {currentItems.length > 0 ? (
-                    /* ✨ 하위 이미지 카드들의 무단 드래그 및 복사를 막기 위한 프로텍터 CSS 주입 */
                     <div css={[gridContainerStyle, imageProtectorStyle]}>
                       {currentItems.map((project) => (
                         <motion.div key={project.id} variants={revealVariants}>
@@ -153,7 +225,7 @@ export default function ProjectPage() {
                       ))}
                     </div>
                   ) : (
-                    <div css={noDataStyle}>프로젝트를 준비 중입니다.</div>
+                    <div css={noDataStyle}>검색 결과에 부합하는 프로젝트가 없습니다.</div>
                   )}
                 </motion.section>
               </AnimatePresence>
@@ -179,10 +251,10 @@ export default function ProjectPage() {
   );
 }
 
-// --- Styles ---
+// --- 안정성이 확보된 가독성 우선 스펙트럼 CSS Styles ---
 
 const projectPageContainerStyle = css`
-  background-color: ${colors.white};
+  background-color: ${colors?.white || '#ffffff'};
   min-height: 100vh;
   padding-top: 90px;
 `;
@@ -199,7 +271,7 @@ const contentWrapperStyle = css`
 `;
 
 const projectIntroSectionStyle = css`
-  padding: 6rem 0 4rem 0;
+  padding: 6rem 0 2rem 0;
   text-align: center;
 `;
 
@@ -213,7 +285,7 @@ const topLabelStyle = css`
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.5em;
-  color: ${colors.accent || '#c5a47e'};
+  color: ${colors?.accent || '#c5a47e'};
   margin-bottom: 1.5rem;
 `;
 
@@ -221,16 +293,103 @@ const bigSloganStyle = css`
   font-size: 5rem;
   font-weight: 900;
   line-height: 1.1;
-  color: ${colors.primary || '#111'};
+  color: ${colors?.primary || '#111111'};
   .outline {
     color: transparent;
-    -webkit-text-stroke: 1.5px ${colors.primary || '#111'};
+    -webkit-text-stroke: 1.5px ${colors?.primary || '#111111'};
     opacity: 0.3;
   }
   .accent {
-    color: ${colors.accent || '#c5a47e'};
+    color: ${colors?.accent || '#c5a47e'};
   }
   @media (max-width: 768px) { font-size: 2.8rem; }
+`;
+
+const searchSectionStyle = css`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5rem;
+`;
+
+const searchContainerStyle = css`
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+`;
+
+const searchInputStyle = css`
+  width: 100%;
+  padding: 14px 55px 14px 20px;
+  font-size: 0.95rem;
+  
+  /* 자연스러운 순수 딥블랙 톤으로 텍스트 색상 바인딩 */
+  color: ${colors?.gray?.[800] || '#222222'}; 
+  background-color: ${colors?.white || '#ffffff'};
+  
+  /* 포커싱 전 기본 상태부터 선명한 테마 포인트 컬러 테두리 부여 */
+  border: 1.5px solid ${colors?.accent || '#c5a47e'};
+  border-radius: 50px;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  letter-spacing: -0.02em;
+
+  &::placeholder {
+    color: ${colors?.gray?.[400] || '#aaaaaa'};
+  }
+
+  &:hover {
+    border-color: ${colors?.accent || '#c5a47e'};
+    box-shadow: 0 2px 10px rgba(197, 164, 126, 0.08);
+  }
+
+  &:focus {
+    border-color: ${colors?.accent || '#c5a47e'};
+    box-shadow: 0 4px 20px rgba(197, 164, 126, 0.16);
+  }
+`;
+
+const searchIconButtonStyle = css`
+  position: absolute;
+  right: 18px;
+  background: none;
+  border: none;
+  color: ${colors?.accent || '#c5a47e'};
+  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  input:focus + & {
+    opacity: 1;
+  }
+`;
+
+const clearButtonStyle = css`
+  position: absolute;
+  right: 48px;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: ${colors?.gray?.[400] || '#aaaaaa'};
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: ${colors?.primary || '#111111'};
+  }
 `;
 
 const gridSectionStyle = css`
@@ -253,23 +412,22 @@ const gridContainerStyle = css`
   }
 `;
 
-/* ✨ 이미지 무단 복사 및 다운로드 제한 가드 스타일 
-  - 카드 내의 모든 이미지 자식 요소들의 포인터 이벤트를 무력화하고 드래그 선택을 금지합니다.
-*/
 const imageProtectorStyle = css`
   user-select: none;
   -webkit-user-drag: none;
   
   img {
-    pointer-events: none; /* 이미지 우클릭 컨텍스트 방지 및 롱탭 차단 */
-    -webkit-user-drag: none; /* 이미지 자체 드래그앤드롭 차단 */
+    pointer-events: none;
+    -webkit-user-drag: none;
   }
 `;
 
 const noDataStyle = css`
   text-align: center;
   padding: 100px 0;
-  color: ${colors.gray[400]};
+  color: ${colors?.gray?.[400] || '#aaaaaa'};
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
 `;
 
 const paginationContainerStyle = css`
@@ -287,7 +445,7 @@ const paginationButtonStyle = (isActive: boolean) => css`
   background: none;
   font-size: 1rem;
   font-weight: ${isActive ? "700" : "400"};
-  color: ${isActive ? colors.primary : colors.gray[400]};
+  color: ${isActive ? (colors?.primary || '#111111') : (colors?.gray?.[400] || '#aaaaaa')};
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
@@ -300,11 +458,11 @@ const paginationButtonStyle = (isActive: boolean) => css`
     transform: translateX(-50%);
     width: ${isActive ? "15px" : "0"};
     height: 2px;
-    background-color: ${colors.primary};
+    background-color: ${colors?.primary || '#111111'};
     transition: width 0.3s ease;
   }
 
   &:hover {
-    color: ${colors.primary};
+    color: ${colors?.primary || '#111111'};
   }
 `;
