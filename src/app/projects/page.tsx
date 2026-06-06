@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { css } from "@emotion/react";
-import { motion, Variants, AnimatePresence } from "framer-motion"; // 환경에 따라 'framer-motion'으로 수정 가능
+import { motion, Variants, AnimatePresence } from "framer-motion"; 
 import { useRouter } from "next/navigation";
 import { colors } from "@/src/styles/colors";
 import PageTitle from "@/src/components/text/PageTitle";
@@ -24,7 +24,6 @@ export default function ProjectPage() {
   
   const [itemsPerPage, setItemsPerPage] = useState(9);
 
-  // 마침표 더블 클릭 시 관리자 페이지로 이동
   const handleAdminAccess = () => {
     router.push("/login"); 
   };
@@ -88,6 +87,11 @@ export default function ProjectPage() {
     window.scrollTo({ top: 300, behavior: 'smooth' }); 
   };
 
+  // ✨ 추가: 마우스 우클릭 콘텍스트 메뉴를 원천 차단하는 핸들러
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
   return (
     <div css={projectPageContainerStyle}>
       <PageTitle
@@ -111,14 +115,13 @@ export default function ProjectPage() {
                 Crafting <span className="outline">Inspiring</span>{" "}
                 <span className="accent">
                   Spaces
-                  {/* 마침표(.)에만 더블 클릭 이벤트 부여 */}
                   <span 
                     onDoubleClick={handleAdminAccess}
                     style={{ 
                       userSelect: 'none', 
                       cursor: 'default',
                       display: 'inline-block',
-                      paddingRight: '10px' // 클릭 영역 확보를 위한 미세한 패딩
+                      paddingRight: '10px'
                     }}
                   >
                     .
@@ -138,9 +141,11 @@ export default function ProjectPage() {
                   initial="hidden"
                   animate="show"
                   exit={{ opacity: 0, y: -20 }}
+                  onContextMenu={handleContextMenu} // ✨ 리스트 섹션 영역 우클릭 메뉴 차단
                 >
                   {currentItems.length > 0 ? (
-                    <div css={gridContainerStyle}>
+                    /* ✨ 하위 이미지 카드들의 무단 드래그 및 복사를 막기 위한 프로텍터 CSS 주입 */
+                    <div css={[gridContainerStyle, imageProtectorStyle]}>
                       {currentItems.map((project) => (
                         <motion.div key={project.id} variants={revealVariants}>
                           <ProjectListCard project={project} />
@@ -245,6 +250,19 @@ const gridContainerStyle = css`
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
     gap: 50px;
+  }
+`;
+
+/* ✨ 이미지 무단 복사 및 다운로드 제한 가드 스타일 
+  - 카드 내의 모든 이미지 자식 요소들의 포인터 이벤트를 무력화하고 드래그 선택을 금지합니다.
+*/
+const imageProtectorStyle = css`
+  user-select: none;
+  -webkit-user-drag: none;
+  
+  img {
+    pointer-events: none; /* 이미지 우클릭 컨텍스트 방지 및 롱탭 차단 */
+    -webkit-user-drag: none; /* 이미지 자체 드래그앤드롭 차단 */
   }
 `;
 

@@ -47,15 +47,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const allImages = project.saveNames ? project.saveNames.split(",") : [];
 
   const handleNext = () => {
-    if (currentIndex >= allImages.length - 1) return; // 마지막 장 예외 처리
+    if (currentIndex >= allImages.length - 1) return;
     setCurrentIndex((prev) => prev + 1);
     setAnimKey((prev) => prev + 1);
   };
 
   const handlePrev = () => {
-    if (currentIndex <= 0) return; // 첫 번째 장 예외 처리
+    if (currentIndex <= 0) return;
     setCurrentIndex((prev) => prev - 1);
     setAnimKey((prev) => prev + 1);
+  };
+
+  // ✨ 추가: 마우스 우클릭 이벤트를 무력화하는 핸들러
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
   };
 
   return (
@@ -71,7 +76,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       <section css={gallerySectionStyle}>
         {allImages.length > 0 ? (
           <>
-            {/* 1. 요청 사항: 첫 장/마지막 장 조건부 화살표 렌더링 */}
+            {/* 1. 첫 장/마지막 장 조건부 화살표 렌더링 */}
             {allImages.length > 1 && currentIndex > 0 && (
               <button css={[arrowButtonStyle, leftArrowStyle]} onClick={handlePrev} aria-label="Previous Image">
                 <span css={[arrowIconStyle, leftChevron]} />
@@ -94,7 +99,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   const isCenter = idx === currentIndex;
                   return (
                     <div key={idx} css={slideItemStyle}>
-                      <div css={[imageWrapperStyle, !isCenter && sideImageStyle]}>
+                      {/* ✨ 우클릭 금지 핸들러(onContextMenu) 연동 */}
+                      <div 
+                        css={[imageWrapperStyle, !isCenter && sideImageStyle]}
+                        onContextMenu={handleContextMenu}
+                      >
                         <Image
                           key={isCenter ? `center-${animKey}` : `side-${idx}`}
                           src={`/uploads/${img}`}
@@ -103,6 +112,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           height={ORIGIN_HEIGHT}
                           css={[imageStaticStyle, isCenter && centerBlurAnimation]}
                           priority={isCenter}
+                          draggable={false} // 이미지 드래그 다운로드 방지
                         />
                       </div>
                     </div>
@@ -205,12 +215,16 @@ const slideItemStyle = css({
   boxSizing: "border-box",
 });
 
+/* ✨ 이미지 보호막 설정 스타일 변경 */
 const imageWrapperStyle = css({
   width: "100%",
   backgroundColor: colors.gray[100],
   overflow: "hidden",
   borderRadius: "6px",
   transition: "all 0.4s ease",
+  /* pointer-events를 none으로 주면 마우스 우클릭/모바일 롱탭 자체가 먹히지 않습니다 */
+  pointerEvents: "none", 
+  userSelect: "none",
 });
 
 const sideImageStyle = css({
@@ -234,7 +248,7 @@ const arrowButtonStyle = css({
   position: "absolute",
   top: "50%",
   transform: "translateY(-50%)",
-  zIndex: 30,
+  zIndex: 30, // 이미지 영역(pointer-events: none)보다 상위에 배치되어 안정적으로 클릭됨
   background: "none",
   border: "none",
   width: "60px",
@@ -244,7 +258,7 @@ const arrowButtonStyle = css({
   justifyContent: "center",
   alignItems: "center",
   transition: "transform 0.2s ease, opacity 0.2s ease",
-  opacity: 0.4, // 기본 투명도를 살짝 낮춰 절제미 부여
+  opacity: 0.4, 
   "&:hover": {
     opacity: 0.9,
     transform: "translateY(-50%) scale(1.1)", 
@@ -265,14 +279,11 @@ const rightArrowStyle = css({
   "@media (max-width: 768px)": { right: "1%" },
 });
 
-/* ✨ 요청 사항: 화살표 디자인 커스텀 및 각도 확장 
-  - 텍스트 기호 분실/깨짐 방지 및 정밀 제어를 위해 CSS border 기법 사용
-*/
 const arrowIconStyle = css({
   display: "inline-block",
   width: "18px",
   height: "18px",
-  borderTop: `2.5px solid ${colors.gray[800]}`, // 선 굵기 조절
+  borderTop: `2.5px solid ${colors.gray[800]}`, 
   borderRight: `2.5px solid ${colors.gray[800]}`,
   boxSizing: "border-box",
   "@media (max-width: 768px)": {
@@ -282,7 +293,6 @@ const arrowIconStyle = css({
   },
 });
 
-// 화살표 꺾임 각도를 더 시원하게 보이도록 회전값 최적화 (-135deg, 45deg)
 const leftChevron = css({
   transform: "rotate(-135deg)",
 });
