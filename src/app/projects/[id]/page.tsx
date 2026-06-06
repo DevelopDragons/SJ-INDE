@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { css } from "@emotion/react";
+import { css, keyframes } from "@emotion/react";
 import Image from "next/image";
 import { colors } from "@/src/styles/colors";
 
@@ -18,8 +18,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
 
-  // 제공해주신 원본 규격 (4:3 비율)
   const ORIGIN_WIDTH = 1444; 
   const ORIGIN_HEIGHT = 1083;
 
@@ -42,10 +44,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   if (isLoading) return <div css={loadingContainerStyle}><div css={spinnerStyle} /></div>;
   if (!project) return <div css={loadingContainerStyle}>프로젝트를 찾을 수 없습니다.</div>;
 
-  // 이미지 배열 처리
   const allImages = project.saveNames ? project.saveNames.split(",") : [];
-  const firstImage = allImages[0]; // 첫 번째 대형 사진
-  const remainingImages = allImages.slice(1); // 나머지 사진들
+
+  const handleNext = () => {
+    if (currentIndex >= allImages.length - 1) return; // 마지막 장 예외 처리
+    setCurrentIndex((prev) => prev + 1);
+    setAnimKey((prev) => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentIndex <= 0) return; // 첫 번째 장 예외 처리
+    setCurrentIndex((prev) => prev - 1);
+    setAnimKey((prev) => prev + 1);
+  };
 
   return (
     <main css={detailContainerStyle}>
@@ -56,60 +67,90 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         <div css={dividerStyle} />
       </header>
 
-      {/* 갤러리 영역: 1 + 3열 구조 */}
+      {/* 갤러리 캐러셀 영역 */}
       <section css={gallerySectionStyle}>
-        {/* 1. 상단: 첫 번째 사진 대형 배치 */}
-        <div css={mainHeroImageBox}>
-          <Image
-            src={`/uploads/${firstImage}`}
-            alt="Main Hero"
-            width={ORIGIN_WIDTH}
-            height={ORIGIN_HEIGHT}
-            css={imageStaticStyle} // 원본 비율 보존 및 가로 100%
-            priority
-          />
-        </div>
+        {allImages.length > 0 ? (
+          <>
+            {/* 1. 요청 사항: 첫 장/마지막 장 조건부 화살표 렌더링 */}
+            {allImages.length > 1 && currentIndex > 0 && (
+              <button css={[arrowButtonStyle, leftArrowStyle]} onClick={handlePrev} aria-label="Previous Image">
+                <span css={[arrowIconStyle, leftChevron]} />
+              </button>
+            )}
 
-        {/* 2. 하단: 나머지 사진 3열 그리드 배치 */}
-        {remainingImages.length > 0 && (
-          <div css={subImageGridStyle}>
-            {remainingImages.map((img, idx) => (
-              <div key={idx} css={gridItemStyle}>
-                <Image
-                  src={`/uploads/${img}`}
-                  alt={`Detail ${idx}`}
-                  width={ORIGIN_WIDTH}
-                  height={ORIGIN_HEIGHT}
-                  css={imageStaticStyle}
-                />
+            {allImages.length > 1 && currentIndex < allImages.length - 1 && (
+              <button css={[arrowButtonStyle, rightArrowStyle]} onClick={handleNext} aria-label="Next Image">
+                <span css={[arrowIconStyle, rightChevron]} />
+              </button>
+            )}
+
+            {/* 2. 캐러셀 컨테이너 */}
+            <div css={carouselWrapperStyle}>
+              <div 
+                css={sliderTrackStyle} 
+                style={{ transform: `translateX(calc(-${currentIndex * 100}%))` }}
+              >
+                {allImages.map((img, idx) => {
+                  const isCenter = idx === currentIndex;
+                  return (
+                    <div key={idx} css={slideItemStyle}>
+                      <div css={[imageWrapperStyle, !isCenter && sideImageStyle]}>
+                        <Image
+                          key={isCenter ? `center-${animKey}` : `side-${idx}`}
+                          src={`/uploads/${img}`}
+                          alt={`Project Image ${idx + 1}`}
+                          width={ORIGIN_WIDTH}
+                          height={ORIGIN_HEIGHT}
+                          css={[imageStaticStyle, isCenter && centerBlurAnimation]}
+                          priority={isCenter}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          </>
+        ) : (
+          <div css={noImageStyle}>등록된 이미지가 없습니다.</div>
         )}
       </section>
     </main>
   );
 }
 
-// --- 스타일 정의 (시원하고 정갈한 레이아웃) ---
+// --- 스타일 정의 및 애니메이션 ---
+
+const blurFadeIn = keyframes`
+  0% {
+    filter: blur(8px);
+    opacity: 0.8;
+  }
+  100% {
+    filter: blur(0px);
+    opacity: 1;
+  }
+`;
 
 const detailContainerStyle = css({
-  maxWidth: "1440px",
+  maxWidth: "100%", 
   margin: "0 auto",
-  padding: "180px 40px 150px 40px",
+  padding: "180px 0 150px 0",
   backgroundColor: colors.white,
+  overflowX: "hidden", 
   "@media (max-width: 768px)": {
-    padding: "120px 20px 80px 20px",
+    padding: "120px 0 80px 0",
   },
 });
 
 const headerInfoStyle = css({
   textAlign: "center",
-  marginBottom: "80px",
+  marginBottom: "60px",
+  padding: "0 20px",
 });
 
 const mainTitleStyle = css({
-  fontSize: "3.2rem", // 글자 크기를 살짝 키움
+  fontSize: "3.2rem",
   fontWeight: 700,
   color: colors.gray[700],
   letterSpacing: "-0.04em",
@@ -131,47 +172,131 @@ const dividerStyle = css({
   margin: "0 auto",
 });
 
-/* 이미지 원본 비율 보존 및 반응형 스타일 */
-const imageStaticStyle = css({
-  width: "100%", 
-  height: "auto", // 가로폭에 맞춰 세로 비율 자동 계산 (4:3 보존)
-  display: "block",
-});
-
 const gallerySectionStyle = css({
-  display: "flex",
-  flexDirection: "column",
-  gap: "40px", // 메인과 하단 그리드 사이 간격
+  width: "100%",
+  position: "relative",
+  maxWidth: "1440px", 
+  margin: "0 auto",
 });
 
-/* 상단 대형 이미지 (1) */
-const mainHeroImageBox = css({
+const carouselWrapperStyle = css({
   position: "relative",
+  width: "65%", 
+  margin: "0 auto",
+  overflow: "visible", 
+  "@media (max-width: 1024px)": { width: "75%" },
+  "@media (max-width: 768px)": { width: "80%" },
+});
+
+const sliderTrackStyle = css({
+  display: "flex",
+  width: "100%",
+  transition: "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
+});
+
+const slideItemStyle = css({
+  minWidth: "100%",
+  width: "100%",
+  flexShrink: 0,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "0 24px", 
+  boxSizing: "border-box",
+});
+
+const imageWrapperStyle = css({
   width: "100%",
   backgroundColor: colors.gray[100],
   overflow: "hidden",
+  borderRadius: "6px",
+  transition: "all 0.4s ease",
 });
 
-/* 하단 서브 그리드 (3열) */
-const subImageGridStyle = css({
-  display: "grid",
-  gridTemplateColumns: "repeat(3, 1fr)", // 데스크탑 3열
-  gap: "30px", // 사진들 사이 간격
+const sideImageStyle = css({
+  filter: "blur(2px)",
+  opacity: 0.4,
+  transform: "scale(0.97)",
+});
+
+const imageStaticStyle = css({
+  width: "100%", 
+  height: "auto", 
+  display: "block",
+});
+
+const centerBlurAnimation = css({
+  animation: `${blurFadeIn} 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+  willChange: "filter, opacity",
+});
+
+const arrowButtonStyle = css({
+  position: "absolute",
+  top: "50%",
+  transform: "translateY(-50%)",
+  zIndex: 30,
+  background: "none",
+  border: "none",
+  width: "60px",
+  height: "60px",
+  cursor: "pointer",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  transition: "transform 0.2s ease, opacity 0.2s ease",
+  opacity: 0.4, // 기본 투명도를 살짝 낮춰 절제미 부여
+  "&:hover": {
+    opacity: 0.9,
+    transform: "translateY(-50%) scale(1.1)", 
+  },
   "@media (max-width: 1024px)": {
-    gridTemplateColumns: "repeat(2, 1fr)", // 태블릿 2열
-  },
-  "@media (max-width: 600px)": {
-    gridTemplateColumns: "1fr", // 모바일 1열
+    width: "40px",
+    height: "40px",
   },
 });
 
-const gridItemStyle = css({
-  position: "relative",
-  backgroundColor: colors.gray[100],
-  overflow: "hidden",
+const leftArrowStyle = css({ 
+  left: "4%", 
+  "@media (max-width: 768px)": { left: "1%" },
 });
 
-// 로딩 스타일 (변동 없음)
+const rightArrowStyle = css({ 
+  right: "4%", 
+  "@media (max-width: 768px)": { right: "1%" },
+});
+
+/* ✨ 요청 사항: 화살표 디자인 커스텀 및 각도 확장 
+  - 텍스트 기호 분실/깨짐 방지 및 정밀 제어를 위해 CSS border 기법 사용
+*/
+const arrowIconStyle = css({
+  display: "inline-block",
+  width: "18px",
+  height: "18px",
+  borderTop: `2.5px solid ${colors.gray[800]}`, // 선 굵기 조절
+  borderRight: `2.5px solid ${colors.gray[800]}`,
+  boxSizing: "border-box",
+  "@media (max-width: 768px)": {
+    width: "13px",
+    height: "13px",
+    borderWidth: "2px",
+  },
+});
+
+// 화살표 꺾임 각도를 더 시원하게 보이도록 회전값 최적화 (-135deg, 45deg)
+const leftChevron = css({
+  transform: "rotate(-135deg)",
+});
+
+const rightChevron = css({
+  transform: "rotate(45deg)",
+});
+
+const noImageStyle = css({
+  textAlign: "center",
+  padding: "100px 0",
+  color: colors.gray[400],
+});
+
 const loadingContainerStyle = css({
   display: "flex",
   justifyContent: "center",
