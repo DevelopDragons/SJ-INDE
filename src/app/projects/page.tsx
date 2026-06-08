@@ -100,13 +100,11 @@ export default function ProjectPage() {
     return Math.ceil(filteredProjects.length / itemsPerPage);
   }, [filteredProjects.length, itemsPerPage]);
 
-  // ✨ 트렌디한 페이지네이션 번호 노출 알고리즘 (최대 5개씩 묶음 표출)
   const paginationRange = useMemo(() => {
     if (totalPages <= 10) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     
-    // 10페이지가 넘을 경우 현재 선택된 페이지 주위로 유동적 그룹 맵핑
     const currentGroup = Math.ceil(currentPage / 5);
     const startPage = (currentGroup - 1) * 5 + 1;
     const endPage = Math.min(startPage + 4, totalPages);
@@ -152,7 +150,7 @@ export default function ProjectPage() {
           {/* 상단 배너 섹션 */}
           <section css={projectIntroSectionStyle}>
             <motion.div variants={containerVariants} initial="hidden" animate="show" css={introContentStyle}>
-              <motion.span css={topLabelStyle} variants={revealVariants}>ARCHIVE</motion.span>
+              <motion.span css={topLabelStyle} variants={revealVariants}>PROJECTS</motion.span>
               <motion.h2 css={bigSloganStyle} variants={revealVariants}>
                 <span className="accent">Crafting</span> <span className="outline">Inspiring</span>{" "}
                 <span className="accent">
@@ -219,10 +217,9 @@ export default function ProjectPage() {
                 </motion.section>
               </AnimatePresence>
 
-              {/* ✨ 고도화된 반응형 트렌디 페이지네이션 바 */}
+              {/* 페이지네이션 바 */}
               {totalPages > 1 && (
                 <div css={paginationContainerStyle}>
-                  {/* 처음으로 이동 (10페이지 이상일 때만 노출 가중) */}
                   {totalPages > 10 && (
                     <button 
                       onClick={() => handlePageChange(1)} 
@@ -234,7 +231,6 @@ export default function ProjectPage() {
                     </button>
                   )}
 
-                  {/* 이전 페이지로 이동 */}
                   <button 
                     onClick={() => handlePageChange(Math.max(currentPage - 1, 1))} 
                     disabled={currentPage === 1}
@@ -244,7 +240,6 @@ export default function ProjectPage() {
                     &lsaquo;
                   </button>
 
-                  {/* 페이지 번호 루프 */}
                   {paginationRange.map((num) => (
                     <button
                       key={num}
@@ -255,7 +250,6 @@ export default function ProjectPage() {
                     </button>
                   ))}
 
-                  {/* 다음 페이지로 이동 */}
                   <button 
                     onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))} 
                     disabled={currentPage === totalPages}
@@ -265,7 +259,6 @@ export default function ProjectPage() {
                     &rsaquo;
                   </button>
 
-                  {/* 끝으로 이동 (10페이지 이상일 때만 노출 가중) */}
                   {totalPages > 10 && (
                     <button 
                       onClick={() => handlePageChange(totalPages)} 
@@ -286,43 +279,44 @@ export default function ProjectPage() {
   );
 }
 
-// --- 🎨 CSS Styles 구역 ---
+// --- 🎨 CSS Styles 구역 (경계면 흰 여백 결함 완벽 해결) ---
 
 const projectPageContainerStyle = css`
   background-color: ${colors?.white || '#ffffff'}; 
   min-height: 100vh;
-  padding-top: 90px;
+  /* 💡 고정 패딩 방식 대신 헤더 영역을 자연스럽게 덮기 위해 마진 조율 및 정렬 방식 선언 */
+  padding-top: 0; 
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
   position: relative;
-
-  @media (max-width: 1024px) {
-    padding-top: 80px;
-    margin-top: -1px;
-  }
-  @media (max-width: 768px) {
-    padding-top: 60px;
-    margin-top: -1.5px;
-  }
+  overflow: hidden;
 `;
 
 const mainContentStyle = css`
   width: 100%;
   background-color: ${colors?.white || '#ffffff'}; 
-  padding-bottom: 120px;
+  padding-bottom: 160px;
+  /* 💡 PageTitle 컴포넌트 마진 오버랩으로 이미지 틈새 결함 원천 차단 */
+  margin-top: -2px;
+  position: relative;
+  z-index: 1;
 `;
 
 const contentWrapperStyle = css`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 50px;
+  padding: 0 60px; 
   background-color: ${colors?.white || '#ffffff'}; 
-  @media (max-width: 768px) { padding: 0 20px; }
+  @media (max-width: 768px) { padding: 0 28px; } 
 `;
 
 const projectIntroSectionStyle = css`
-  padding: 6rem 0 2rem 0;
+  /* 💡 상단 패딩 간격을 여유 있게 넓혀 레이아웃 개방감을 확보하되 슬로건과의 비율을 깔끔하게 유지합니다. */
+  padding: 8rem 0 3.5rem 0; 
   text-align: center;
   background-color: ${colors?.white || '#ffffff'}; 
-  @media (max-width: 768px) { padding: 4rem 0 2rem 0; }
+  @media (max-width: 768px) { padding: 5rem 0 2.5rem 0; }
 `;
 
 const introContentStyle = css`
@@ -361,9 +355,9 @@ const bigSloganStyle = css`
 const searchSectionStyle = css`
   display: flex;
   justify-content: center;
-  padding-bottom: 5rem;
+  padding-bottom: 6.5rem; 
   background-color: ${colors?.white || '#ffffff'}; 
-  @media (max-width: 768px) { padding-bottom: 3rem; }
+  @media (max-width: 768px) { padding-bottom: 4rem; }
 `;
 
 const searchContainerStyle = css`
@@ -422,21 +416,21 @@ const clearButtonStyle = css`
 `;
 
 const gridSectionStyle = css`
-  margin-top: 20px;
+  margin-top: 35px; 
 `;
 
 const gridContainerStyle = css`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 80px 40px;
+  gap: 90px 45px; 
 
   @media (max-width: 1100px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 60px 30px;
+    gap: 70px 35px;
   }
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
-    gap: 50px;
+    gap: 55px;
   }
 `;
 
@@ -448,7 +442,7 @@ const imageProtectorStyle = css`
 
 const noDataStyle = css`
   text-align: center;
-  padding: 100px 0;
+  padding: 120px 0; 
   color: ${colors?.gray?.[400] || '#aaaaaa'};
   font-size: 1.1rem;
   letter-spacing: -0.02em;
@@ -459,10 +453,10 @@ const paginationContainerStyle = css`
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 100px;
+  margin-top: 140px; 
+  @media (max-width: 768px) { margin-top: 90px; }
 `;
 
-// ✨ 활성화 유무에 따라 색상이 다이내믹하게 바뀌는 스크립트 튜닝
 const paginationButtonStyle = (isActive: boolean) => css`
   width: 40px;
   height: 40px;
@@ -470,7 +464,6 @@ const paginationButtonStyle = (isActive: boolean) => css`
   background: none;
   font-size: 1rem;
   font-weight: ${isActive ? "700" : "400"};
-  /* 💡 현재 선택된 번호는 선준아이디의 메인 전용 색상 적용 */
   color: ${isActive ? (colors?.primary || '#9e0012') : (colors?.gray?.[400] || '#aaaaaa')};
   cursor: pointer;
   position: relative;
@@ -484,7 +477,6 @@ const paginationButtonStyle = (isActive: boolean) => css`
     transform: translateX(-50%);
     width: ${isActive ? "15px" : "0"};
     height: 2px;
-    /* 💡 하단 지시선막대도 메인 컬러 스펙 일치화 */
     background-color: ${colors?.primary || '#9e0012'};
     transition: width 0.25s ease-in-out;
   }

@@ -8,6 +8,13 @@ import { useRouter } from "next/navigation";
 import { colors } from "@/src/styles/colors";
 import PageTitle from "@/src/components/text/PageTitle";
 
+interface Project {
+  id: number;
+  title: string;
+  subTitle: string;
+  saveNames: string | null;
+}
+
 export default function ProjectWritePage() {
   const router = useRouter();
   
@@ -80,7 +87,6 @@ export default function ProjectWritePage() {
       return;
     }
 
-    // 조건 충족 시 비밀번호 입력 팝업 오픈
     setPassword("");
     setIsModalOpen(true);
   };
@@ -95,7 +101,6 @@ export default function ProjectWritePage() {
     setIsVerifying(true);
 
     try {
-      // 🔒 [Step 1] 백엔드 비밀번호 검증 API 호출
       const verifyRes = await fetch("/api/projects/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,9 +113,8 @@ export default function ProjectWritePage() {
         throw new Error(verifyData.message || "비밀번호가 일치하지 않습니다.");
       }
 
-      // 📤 [Step 2] 검증 성공 시 실제 파일 및 텍스트 데이터 FormData 전송
       setIsSubmitting(true);
-      setIsModalOpen(false); // 모달 닫기
+      setIsModalOpen(false); 
 
       const formData = new FormData();
       formData.append("title", title.trim());
@@ -132,7 +136,7 @@ export default function ProjectWritePage() {
       alert("새로운 포트폴리오 프로젝트가 성공적으로 등록되었습니다.");
       router.push("/projects");
       router.refresh();
-    } catch (err: unknown) { // ESLint any 에러 수정 완료
+    } catch (err: unknown) { 
       console.error(err);
       if (err instanceof Error) {
         alert(err.message);
@@ -148,8 +152,8 @@ export default function ProjectWritePage() {
   return (
     <div css={writePageContainerStyle}>
       <PageTitle
-        title="CREATE PORTFOLIO"
-        subTitle="새로운 프리미엄 공간 디자인 아카이브를 등록합니다."
+        title="CREATE PROJECTS"
+        subTitle="새로운 프리미엄 공간 디자인 프로젝트를 등록합니다."
       />
 
       <main css={mainContentStyle}>
@@ -185,7 +189,7 @@ export default function ProjectWritePage() {
               />
             </div>
 
-            {/* 3. 공간 사진 첨부 (요구사항 안내 문구 적용 완료) */}
+            {/* 3. 공간 사진 첨부 */}
             <div css={inputGroupStyle}>
               <label css={labelStyle}>공간 사진 첨부 (Images)</label>
               <div
@@ -209,7 +213,6 @@ export default function ProjectWritePage() {
                 </svg>
                 <p className="main-text">클릭하거나 사진 파일을 여기로 끌어다 놓으세요.</p>
                 
-                {/* ✨ 필수 핵심 정보 텍스트 컴포넌트 마감 */}
                 <div css={noticeContainerStyle} onClick={(e) => e.stopPropagation()}>
                   <p className="sub-text">
                     <span className="accent-dot">•</span> <strong>첫 번째로 첨부된 이미지</strong>가 메인 화면의 <strong>썸네일</strong>로 지정됩니다.
@@ -331,18 +334,26 @@ export default function ProjectWritePage() {
 const writePageContainerStyle = css`
   background-color: ${colors?.white || '#ffffff'};
   min-height: 100vh;
-  padding-top: 90px;
+  padding-top: 0;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 `;
 
 const mainContentStyle = css`
   padding-bottom: 120px;
+  margin-top: -2px;
+  position: relative;
+  z-index: 1;
 `;
 
 const formWrapperStyle = css`
   max-width: 800px;
   margin: 4rem auto 0 auto;
   padding: 0 40px;
-  @media (max-width: 768px) { padding: 0 20px; }
+  @media (max-width: 768px) { padding: 0 20px; margin-top: 3rem; }
 `;
 
 const formStyle = css`
@@ -412,7 +423,6 @@ const dropZoneStyle = (isActive: boolean) => css`
 
 const uploadIconStyle = css` color: ${colors?.accent || '#c5a47e'}; `;
 
-/* 요구사항 추가 패널 안내 스타일 정의 */
 const noticeContainerStyle = css`
   margin-top: 14px;
   display: flex;
@@ -472,7 +482,16 @@ const fileCardStyle = css`
     flex-direction: column; 
     overflow: hidden; 
     padding-right: 20px; 
-    .file-name { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+    
+    /* 💡 기존 색상에서 가시성이 탁월한 진한 블랙톤(#222222)으로 매핑 및 굵기 보정 완료 */
+    .file-name { 
+      font-size: 0.85rem; 
+      font-weight: 500; 
+      color: #222222; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+    } 
     .file-size { font-size: 0.75rem; color: ${colors?.gray?.[400] || '#aaaaaa'}; } 
   } 
 `;
@@ -495,22 +514,15 @@ const actionButtonContainerStyle = css` display: flex; justify-content: flex-end
 const cancelButtonStyle = css`
   padding: 14px 28px;
   font-size: 0.95rem;
-  font-weight: 700; /* 테두리와 텍스트 밸런스를 위해 볼드 처리 */
-  
-  /* 텍스트는 더 진한 회색 사용 */
+  font-weight: 700; 
   color: #222222; 
-  
-  /* 박스 안은 투명하게 처리 */
   background-color: transparent; 
-  
-  /* 테두리는 홈페이지 메인 컬러인 빨간색 적용 */
   border: 1.5px solid ${colors?.primary || '#9e0012'};
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 
   &:hover {
-    /* 마우스 호버 시 은은한 레드 틴트 배경으로 피드백 제공 */
     background-color: rgba(229, 0, 0, 0.04);
     box-shadow: 0 4px 12px rgba(229, 0, 0, 0.06);
   }
