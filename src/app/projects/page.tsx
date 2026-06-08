@@ -104,7 +104,6 @@ export default function ProjectPage() {
     if (totalPages <= 10) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    
     const currentGroup = Math.ceil(currentPage / 5);
     const startPage = (currentGroup - 1) * 5 + 1;
     const endPage = Math.min(startPage + 4, totalPages);
@@ -142,13 +141,14 @@ export default function ProjectPage() {
     <div css={projectPageContainerStyle}>
       <PageTitle
         title="PROJECTS"
-        subTitle="선준아이디가 제안하는 프리미엄 공간 디자인 포트폴리오입니다."
+        subTitle="프리미엄 공간 디자인 포트폴리오"
       />
 
-      <main css={mainContentStyle}>
+      {/* 💡 WorkPage 구조 도입: 각각의 독립된 흰색 section 레이어로 틈새 완전 밀봉 */}
+      <section css={contentSectionStyle}>
         <div css={contentWrapperStyle}>
-          {/* 상단 배너 섹션 */}
-          <section css={projectIntroSectionStyle}>
+          {/* 메인 슬로건 섹션 */}
+          <div css={projectIntroSectionStyle}>
             <motion.div variants={containerVariants} initial="hidden" animate="show" css={introContentStyle}>
               <motion.span css={topLabelStyle} variants={revealVariants}>PROJECTS</motion.span>
               <motion.h2 css={bigSloganStyle} variants={revealVariants}>
@@ -165,10 +165,10 @@ export default function ProjectPage() {
                 </span>
               </motion.h2>
             </motion.div>
-          </section>
+          </div>
 
-          {/* 테마 검색 바 */}
-          <section css={searchSectionStyle}>
+          {/* 검색 섹션 */}
+          <div css={searchSectionStyle}>
             <div css={searchContainerStyle}>
               <input
                 type="text"
@@ -189,12 +189,12 @@ export default function ProjectPage() {
                 </button>
               )}
             </div>
-          </section>
+          </div>
 
           {isLoaded && (
             <>
               <AnimatePresence mode="wait">
-                <motion.section 
+                <motion.div 
                   key={`${currentPage}-${itemsPerPage}-${searchTerm}`}
                   css={gridSectionStyle}
                   variants={containerVariants}
@@ -214,10 +214,10 @@ export default function ProjectPage() {
                   ) : (
                     <div css={noDataStyle}>검색 결과에 부합하는 프로젝트가 없습니다.</div>
                   )}
-                </motion.section>
+                </motion.div>
               </AnimatePresence>
 
-              {/* 페이지네이션 바 */}
+              {/* 페이지네이션 */}
               {totalPages > 1 && (
                 <div css={paginationContainerStyle}>
                   {totalPages > 10 && (
@@ -274,49 +274,35 @@ export default function ProjectPage() {
             </>
           )}
         </div>
-      </main>
+      </section>
     </div>
   );
 }
 
-// --- 🎨 CSS Styles 구역 (경계면 흰 여백 결함 완벽 해결) ---
+// --- Styles ---
 
 const projectPageContainerStyle = css`
-  background-color: ${colors?.white || '#ffffff'}; 
-  min-height: 100vh;
-  /* 💡 고정 패딩 방식 대신 헤더 영역을 자연스럽게 덮기 위해 마진 조율 및 정렬 방식 선언 */
-  padding-top: 0; 
-  margin-top: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
+  padding-top: 80px; /* 고정 헤더 자리를 완벽히 비워두는 WorkPage 컨테이너 방식 */
 `;
 
-const mainContentStyle = css`
-  width: 100%;
-  background-color: ${colors?.white || '#ffffff'}; 
+/* 💡 핵심: WorkPage의 categorySectionStyle 구조를 그대로 이식. 
+   배경색을 흰색으로 명시하여 타이틀과의 경계선 소수점 공백을 완벽 차단합니다. */
+const contentSectionStyle = css`
   padding-bottom: 160px;
-  /* 💡 PageTitle 컴포넌트 마진 오버랩으로 이미지 틈새 결함 원천 차단 */
-  margin-top: -2px;
-  position: relative;
-  z-index: 1;
+  background-color: ${colors.white};
 `;
 
 const contentWrapperStyle = css`
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 60px; 
-  background-color: ${colors?.white || '#ffffff'}; 
   @media (max-width: 768px) { padding: 0 28px; } 
 `;
 
 const projectIntroSectionStyle = css`
-  /* 💡 상단 패딩 간격을 여유 있게 넓혀 레이아웃 개방감을 확보하되 슬로건과의 비율을 깔끔하게 유지합니다. */
-  padding: 8rem 0 3.5rem 0; 
+  padding: 6rem 0 3.5rem 0; 
   text-align: center;
-  background-color: ${colors?.white || '#ffffff'}; 
-  @media (max-width: 768px) { padding: 5rem 0 2.5rem 0; }
+  @media (max-width: 768px) { padding: 4rem 0 2.5rem 0; }
 `;
 
 const introContentStyle = css`
@@ -337,26 +323,38 @@ const bigSloganStyle = css`
   font-size: 5rem;
   font-weight: 900;
   line-height: 1.1;
-  letter-spacing: -0.01em;
-  
+  color: ${colors.primary};
+  margin-bottom: 3rem;
+  letter-spacing: -0.03em; /* 전체적으로 자간을 조여서 단단한 느낌 부여 */
+
   .outline {
     color: transparent;
-    -webkit-text-stroke: 1.5px ${colors?.black || '#111111'};
-    opacity: 0.15;
+    -webkit-text-stroke: 2px ${colors.primary};
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+
+    &:hover {
+      opacity: 0.8; /* 호버 시 살짝 더 진해지는 인터렉션 (선택 사항) */
+    }
   }
-  
+
   .accent {
-    color: ${colors?.primary || '#9e0012'};
+    color: ${colors.primary};
+    /* Essence 부분에 미세한 강조 효과를 주고 싶다면 여기에 추가 */
   }
-  
-  @media (max-width: 768px) { font-size: 2.5rem; }
+
+  @media (max-width: 768px) {
+    font-size: 2.8rem;
+    .outline {
+      -webkit-text-stroke: 1px ${colors.primary}; /* 모바일은 다시 얇게 */
+    }
+  }
 `;
 
 const searchSectionStyle = css`
   display: flex;
   justify-content: center;
   padding-bottom: 6.5rem; 
-  background-color: ${colors?.white || '#ffffff'}; 
   @media (max-width: 768px) { padding-bottom: 4rem; }
 `;
 
@@ -373,7 +371,7 @@ const searchInputStyle = css`
   padding: 14px 55px 14px 20px;
   font-size: 0.95rem;
   color: #222222; 
-  background-color: ${colors?.white || '#ffffff'};
+  background-color: ${colors.white};
   border: 1.5px solid ${colors?.primary || '#9e0012'};
   border-radius: 50px;
   outline: none;
@@ -415,23 +413,13 @@ const clearButtonStyle = css`
   &:hover { color: ${colors?.black || '#111111'}; }
 `;
 
-const gridSectionStyle = css`
-  margin-top: 35px; 
-`;
-
+const gridSectionStyle = css` margin-top: 35px; `;
 const gridContainerStyle = css`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 90px 45px; 
-
-  @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 70px 35px;
-  }
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-    gap: 55px;
-  }
+  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); gap: 70px 35px; }
+  @media (max-width: 640px) { grid-template-columns: 1fr; gap: 55px; }
 `;
 
 const imageProtectorStyle = css`
@@ -480,10 +468,7 @@ const paginationButtonStyle = (isActive: boolean) => css`
     background-color: ${colors?.primary || '#9e0012'};
     transition: width 0.25s ease-in-out;
   }
-
-  &:hover {
-    color: ${colors?.primary || '#9e0012'};
-  }
+  &:hover { color: ${colors?.primary || '#9e0012'}; }
 `;
 
 const arrowNavButtonStyle = css`
@@ -498,15 +483,6 @@ const arrowNavButtonStyle = css`
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    color: ${colors?.primary || '#9e0012'};
-    transform: scale(1.1);
-  }
-
-  &:disabled {
-    color: ${colors?.gray?.[200] || '#e0e0e0'};
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
+  &:hover:not(:disabled) { color: ${colors?.primary || '#9e0012'}; transform: scale(1.1); }
+  &:disabled { color: ${colors?.gray?.[200] || '#e0e0e0'}; cursor: not-allowed; opacity: 0.5; }
 `;
