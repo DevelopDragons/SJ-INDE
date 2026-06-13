@@ -4,6 +4,8 @@ interface Contact {
   email: string;
   headquarter: string;
   branches: string[];
+  brn: string;
+  representative: string;
 }
 
 interface ContactDataSet {
@@ -17,6 +19,8 @@ export const data_contact: Contact = {
   email: "sunjunid@naver.com",
   headquarter: "서울시 강남구 강남대로 320, 1108호",
   branches: ["경기도 하남시 감초로 184번길 65"],
+  brn: "271-88-01313",
+  representative: "박경균",
 };
 
 export const contactDataList: ContactDataSet[] = [
