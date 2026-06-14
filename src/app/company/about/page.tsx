@@ -5,10 +5,13 @@ import { css } from "@emotion/react";
 import { motion, Variants } from "framer-motion";
 import { colors } from "@/src/styles/colors";
 import { data_about } from "@/public/data/about";
-import PageTitle from "@/src/components/text/PageTitle";
+import PageSlogan from "@/src/components/text/PageSlogan";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function CompanyAboutPage() {
-  // 세련된 애니메이션을 위한 Variants
+  const pathname = usePathname();
+
   const revealVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: {
@@ -28,42 +31,42 @@ export default function CompanyAboutPage() {
 
   return (
     <div css={aboutPageContainerStyle}>
-      <PageTitle
-        title={"ABOUT US"}
-        subTitle={"건축과 인테리어, 공간의 본질을 설계합니다"}
+      {/* 🧭 우측 서브페이지 네비게이션 추가 */}
+      <aside css={asideStyle}>
+        <Link
+          href="/company/about"
+          css={navLinkStyle(pathname === "/company/about")}
+        >
+          ABOUT US
+        </Link>
+        <Link
+          href="/company/history"
+          css={navLinkStyle(pathname === "/company/history")}
+        >
+          HISTORY
+        </Link>
+        <Link
+          href="/company/organization"
+          css={navLinkStyle(pathname === "/company/organization")}
+        >
+          ORGANIZATION
+        </Link>
+      </aside>
+
+      <PageSlogan
+        topLabel="DESIGN PHILOSOPHY"
+        title={
+          <>
+            Beyond <span className="outline">Spatial</span>{" "}
+            <span className="accent">Essence.</span>
+          </>
+        }
+        description={data_about.desc}
       />
 
-      {/* 1. Philosophy Section: 정제된 슬로건과 텍스트 */}
-      <section css={philosophySectionStyle}>
-        <div css={containerCustomStyle}>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.3 }}
-            css={philosophyContentStyle}
-          >
-            <motion.span css={topLabelStyle} variants={revealVariants}>
-              DESIGN PHILOSOPHY
-            </motion.span>
-
-            <motion.h2 css={bigSloganStyle} variants={revealVariants}>
-              Beyond <span className="outline">Spatial</span>{" "}
-              <span className="accent">Essence.</span>
-            </motion.h2>
-
-            <motion.div css={descriptionWrapperStyle} variants={revealVariants}>
-              <p css={mainDescStyle}>{data_about.desc}</p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 2. CEO Message Section: 이미지와 텍스트의 조화 */}
       <section css={ceoSectionStyle}>
         <div css={containerCustomStyle}>
           <div css={ceoContentLayoutStyle}>
-            {/* CEO 이미지: 연도 동그라미 삭제 및 그림자 조정 */}
             <motion.div
               css={ceoImageAreaStyle}
               initial={{ opacity: 0, x: -30 }}
@@ -77,7 +80,6 @@ export default function CompanyAboutPage() {
               />
             </motion.div>
 
-            {/* CEO 메시지 영역: 타이포그래피 강조 */}
             <motion.div
               css={ceoMessageWrapperStyle}
               initial="hidden"
@@ -91,7 +93,6 @@ export default function CompanyAboutPage() {
               </motion.h3>
 
               <motion.div css={ceoTextBodyStyle} variants={revealVariants}>
-                {/* \n\n (연속된 줄바꿈)을 기준으로 문단을 나눕니다 */}
                 {data_about.message.split("\n\n").map((paragraph, i) => (
                   <p key={i} css={paragraphStyle}>
                     {paragraph}
@@ -114,95 +115,27 @@ export default function CompanyAboutPage() {
 }
 
 // --- Styles ---
-
 const aboutPageContainerStyle = css`
   padding-top: 60px;
+  position: relative;
 `;
 
 const containerCustomStyle = css`
-  max-width: 1200px; /* 너무 퍼지지 않게 조정 */
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
 `;
 
-/* Philosophy Section */
-const philosophySectionStyle = css`
-  padding: 8rem 0; /* 12rem -> 8rem 여백 축소 */
-  background-color: ${colors.white};
-  text-align: center;
-`;
-
-const philosophyContentStyle = css`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-const topLabelStyle = css`
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.4em;
-  color: ${colors.accent};
-  margin-bottom: 1.5rem;
-`;
-
-const bigSloganStyle = css`
-  font-size: 5rem;
-  font-weight: 900;
-  line-height: 1.1;
-  color: ${colors.primary};
-  margin-bottom: 3rem;
-  letter-spacing: -0.03em; /* 전체적으로 자간을 조여서 단단한 느낌 부여 */
-
-  .outline {
-    color: transparent;
-    -webkit-text-stroke: 2px ${colors.primary};
-    opacity: 0.4;
-    transition: opacity 0.3s ease;
-
-    &:hover {
-      opacity: 0.8; /* 호버 시 살짝 더 진해지는 인터렉션 (선택 사항) */
-    }
-  }
-
-  .accent {
-    color: ${colors.primary};
-    /* Essence 부분에 미세한 강조 효과를 주고 싶다면 여기에 추가 */
-  }
-
-  @media (max-width: 768px) {
-    font-size: 2.8rem;
-    .outline {
-      -webkit-text-stroke: 1px ${colors.primary}; /* 모바일은 다시 얇게 */
-    }
-  }
-`;
-
-const descriptionWrapperStyle = css`
-  max-width: 720px;
-`;
-
-const mainDescStyle = css`
-  font-size: 1.125rem;
-  line-height: 1.8;
-  color: ${colors.gray[600]};
-  white-space: pre-wrap;
-  word-break: keep-all;
-  font-weight: 400;
-`;
-
-/* CEO Section */
 const ceoSectionStyle = css`
-  padding: 8rem 0;
+  padding: 10rem 0;
   background-color: ${colors.gray[100]};
 `;
 
-/* CEO 이미지 영역 수정 */
 const ceoImageAreaStyle = css`
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1.2;
-  overflow: hidden; /* 이미지가 밖으로 나가지 않도록 고정 */
+  overflow: hidden;
   border-radius: 2px;
 
   img {
@@ -212,23 +145,21 @@ const ceoImageAreaStyle = css`
     filter: grayscale(100%);
     transition: transform 1.2s ease-out;
 
-    /* 호버 시 이미지가 부드럽게 커지는 효과 (선택사항) */
     &:hover {
       transform: scale(1.05);
     }
   }
 
   @media (max-width: 1024px) {
-    max-width: 600px; /* 너무 커지는 것 방지 */
-    margin: 0 auto; /* 중앙 정렬 */
+    max-width: 600px;
+    margin: 0 auto;
   }
 `;
 
-/* 레이아웃 그리드 조정 */
 const ceoContentLayoutStyle = css`
   display: grid;
-  grid-template-columns: 1fr 1.2fr; /* 비율을 텍스트 쪽으로 좀 더 배분 */
-  gap: 4rem; /* 여백을 조금 줄여서 안정감 확보 */
+  grid-template-columns: 1fr 1.2fr;
+  gap: 4rem;
   align-items: flex-start;
 
   @media (max-width: 1200px) {
@@ -236,7 +167,7 @@ const ceoContentLayoutStyle = css`
   }
 
   @media (max-width: 1024px) {
-    grid-template-columns: 1fr; /* 세로 배치 */
+    grid-template-columns: 1fr;
     gap: 4rem;
   }
 `;
@@ -258,14 +189,14 @@ const ceoGreetingStyle = css`
 const ceoTextBodyStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 2rem; /* 문단과 문단 사이의 간격을 확실하게 부여 */
+  gap: 2rem;
 `;
 
 const paragraphStyle = css`
-  line-height: 1.5; /* 줄간격을 조금 더 넓혀서 가독성 확보 */
+  line-height: 1.5;
   color: ${colors.gray[600]};
   font-size: 1.05rem;
-  white-space: pre-wrap; /* 문단 내부의 단일 줄바꿈은 유지 */
+  white-space: pre-wrap;
   word-break: keep-all;
 `;
 
@@ -296,6 +227,41 @@ const ceoNameStyle = css`
     color: ${colors.gray[800]};
     margin-left: 0.75rem;
     position: relative;
-    /* 점 디자인(&::before) 삭제 */
+  }
+`;
+
+/* 🧭 네비게이션 공통 스타일 */
+const asideStyle = css`
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  @media (max-width: 1024px) {
+    display: none;
+  }
+`;
+
+const navLinkStyle = (isActive: boolean) => css`
+  font-size: 0.7rem;
+  text-decoration: none;
+  color: ${isActive ? colors.primary : colors.gray[400]};
+  font-weight: ${isActive ? "bold" : "normal"};
+  transition: all 0.4s ease;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  letter-spacing: 0.05em;
+  &::after {
+    content: "";
+    width: ${isActive ? "30px" : "10px"};
+    height: 1px;
+    background: ${isActive ? colors.primary : colors.gray[300]};
+    transition: all 0.4s ease;
   }
 `;

@@ -3,7 +3,7 @@
 
 import { css } from "@emotion/react";
 import { colors } from "@/src/styles/colors";
-import PageTitle from "@/src/components/text/PageTitle";
+import PageSlogan from "@/src/components/text/PageSlogan"; // 1. PageSlogan 임포트
 import { FiMail, FiPhone, FiPrinter, FiMapPin, FiClock } from "react-icons/fi";
 import { data_contact } from "@/public/data/contact";
 
@@ -14,9 +14,16 @@ export default function ContactPage() {
 
   return (
     <div css={contactPageWrapperStyle}>
-      <PageTitle
-        title={"CONTACT US"}
-        subTitle={"성공적인 파트너십을 위한 첫 걸음, 언제든 연락주세요."}
+      {/* 2. 상단 슬로건 섹션 통합 */}
+      <PageSlogan
+        topLabel="CONTACT US"
+        title={
+          <>
+            Start <span className="outline">Your</span>{" "}
+            <span className="accent">Partnership.</span>
+          </>
+        }
+        description="성공적인 비즈니스와 가치 있는 공간 창조를 위한 첫 걸음, 선준아이디가 함께하겠습니다."
       />
 
       <section css={contactContentSectionStyle}>
@@ -122,7 +129,10 @@ export default function ContactPage() {
 // --- Styles ---
 
 const contactPageWrapperStyle = css`
-  padding-top: 80px;
+  /* RootLayout 전역 패딩과 슬로건 자체 패딩의 시너지 조절 */
+  padding-top: 60px;
+  padding-bottom: 120px;
+  width: 100%;
 `;
 
 const contactContentSectionStyle = css`
@@ -133,9 +143,11 @@ const contactContentSectionStyle = css`
 const containerStyle = css`
   max-width: 1300px;
   margin: 0 auto;
-  padding: 60px 2rem 120px 2rem;
+  /* 💡 PageSlogan 하단과의 유기적 흐름을 위해 상단 패딩 축소 조정 */
+  padding: 2px 2rem 120px 2rem;
+
   @media (max-width: 768px) {
-    padding: 40px 1.5rem 80px 1.5rem;
+    padding: 0 1.5rem 80px 1.5rem;
   }
 `;
 
@@ -185,7 +197,7 @@ const quickItemStyle = css`
 
 const mainContentGrid = css`
   display: grid;
-  grid-template-columns: 1fr 1.5fr; /* 지도를 조금 더 넓게 배치 */
+  grid-template-columns: 1fr 1.5fr;
   gap: 80px;
   align-items: flex-start;
   @media (max-width: 1100px) {
@@ -263,7 +275,7 @@ const mapSideStyle = css`
 
 const mapWrapperStyle = css`
   width: 100%;
-  height: 550px; /* Inquiry가 빠진 만큼 지도를 시원하게 키움 */
+  height: 550px;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid ${colors.gray[200]};

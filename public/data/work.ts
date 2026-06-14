@@ -34,12 +34,12 @@ export const data_work_category: WorkCategory[] = [
     title: "실내건축공사업",
     subTitle: "Interior Architecture & Construction",
     description:
-      "전문 건설 면허를 기반으로 주거, 상업, 업무 공간 등 모든 실내 건축 분야에서 최상의 시공 품질을 보장합니다.",
+      "풍부한 현장 노하우와 시공 기술력을 바탕으로 주거, 상업, 업무 공간 등 모든 실내 건축 분야에서 최상의 시공 품질을 보장합니다.",
     items: [
       "신축 및 보수공사",
       "공정별 정밀 시공",
-      "전문 기술인력 배치",
-      "준공 및 인허가 업무",
+      "현장 전문 인력 배치",
+      "공정 및 현장 관리 업무",
     ],
     icon: Building2,
   },
