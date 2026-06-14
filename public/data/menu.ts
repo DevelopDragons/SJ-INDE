@@ -15,14 +15,6 @@ export const menuItems: MenuProps[] = [
     ],
   },
   { title: "BUSINESS", path: "/business" },
-  // {
-  //   title: "BUSINESS",
-  //   path: "/business/work",
-  //   submenu: [
-  //     { title: "Work", path: "/business/work" },
-  //     { title: "Clients", path: "/business/clients" },
-  //   ],
-  // },
   { title: "PROJECTS", path: "/projects" },
   { title: "CONTACT", path: "/contact" },
 ];

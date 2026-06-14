@@ -28,7 +28,7 @@ export const data_main: MainData[] = [
     title: "선준아이디의 비즈니스는",
     content:
       "<b>공간 기획</b>부터 <b>시공</b>까지<br/>브랜드와 사용자를 연결합니다.",
-    path: "business/work",
+    path: "business",
   },
   {
     id: "projects",

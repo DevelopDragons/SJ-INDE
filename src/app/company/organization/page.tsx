@@ -3,33 +3,62 @@
 
 import { css } from "@emotion/react";
 import { colors } from "@/src/styles/colors";
-import PageTitle from "@/src/components/text/PageTitle";
 import { data_organization } from "@/public/data/organization";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import PageSlogan from "@/src/components/text/PageSlogan";
 
 export default function CompanyOrganizationPage() {
+  const pathname = usePathname();
   const deptCount = data_organization.children?.length || 1;
 
   return (
     <div css={orgPageWrapperStyle}>
-      <PageTitle
-        title={"ORGANIZATION"}
-        subTitle={"전문적인 협업 시스템으로 최상의 공간을 만듭니다"}
+      {/* 🧭 우측 서브페이지 네비게이션 추가 */}
+      <aside css={asideStyle}>
+        <Link
+          href="/company/about"
+          css={navLinkStyle(pathname === "/company/about")}
+        >
+          ABOUT US
+        </Link>
+        <Link
+          href="/company/history"
+          css={navLinkStyle(pathname === "/company/history")}
+        >
+          HISTORY
+        </Link>
+        <Link
+          href="/company/organization"
+          css={navLinkStyle(pathname === "/company/organization")}
+        >
+          ORGANIZATION
+        </Link>
+      </aside>
+
+      <PageSlogan
+        topLabel="ORGANIZATION"
+        title={
+          <>
+            Efficient <span className="outline">Expert</span>{" "}
+            <span className="accent">Network.</span>
+          </>
+        }
+        description="전문적인 의사소통과 유기적인 시스템으로 신속하고 정확한 공간 솔루션을 도출합니다."
       />
 
       <section css={orgContentSectionStyle}>
         <div css={containerStyle}>
-          {/* 1. 데스크탑/태블릿용 트리 구조 (601px 이상) */}
+          {/* 1. 데스크탑/태블릿용 트리 구조 */}
           <div css={desktopTreeWrapper}>
             <div css={rootWrapperStyle}>
               <div css={nodeBoxStyle("root")}>{data_organization.name}</div>
               <div css={verticalLineStyle} />
             </div>
 
-            {/* 수평선이 포함된 그리드 */}
             <div css={deptGridStyle}>
               {data_organization.children?.map((dept) => (
                 <div key={dept.id} css={deptColumnStyle}>
-                  {/* 각 부서 상단 수직선 */}
                   <div css={verticalLineShortStyle} />
                   <div css={nodeBoxStyle("department")}>{dept.name}</div>
 
@@ -47,7 +76,7 @@ export default function CompanyOrganizationPage() {
             </div>
           </div>
 
-          {/* 2. 모바일용 카드 레이아웃 (600px 이하) */}
+          {/* 2. 모바일용 카드 레이아웃 */}
           <div css={mobileCardWrapper}>
             <div css={mobileRootBox}>{data_organization.name}</div>
             <div css={mobileGridStyle}>
@@ -70,35 +99,34 @@ export default function CompanyOrganizationPage() {
   );
 }
 
-// --- 공통 Styles ---
-
+// --- Styles ---
 const orgPageWrapperStyle = css`
-  padding-top: 80px;
+  padding-top: 60px;
+  padding-bottom: 120px;
+  position: relative;
 `;
 
 const orgContentSectionStyle = css`
   width: 100%;
   background-color: ${colors.white};
-  overflow-x: auto; /* 트리 구조일 때 최소 너비 미달 시 스크롤 보장 */
+  overflow-x: auto;
 `;
 
 const containerStyle = css`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 80px 2rem 120px 2rem;
+  padding: 40px 2rem 120px 2rem;
   @media (max-width: 600px) {
     padding: 40px 1rem;
   }
 `;
-
-// --- [데스크탑 전용] 트리 구조 스타일 최적화 ---
 
 const desktopTreeWrapper = css`
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  min-width: 800px; /* 트리 구조 유지 최소 너비 */
+  min-width: 800px;
   @media (max-width: 1024px) {
     display: none;
   }
@@ -119,7 +147,6 @@ const deptGridStyle = css`
   width: 100%;
   position: relative;
 
-  /* 수평선: 전체 너비에 긋기 */
   &::before {
     content: "";
     position: absolute;
@@ -139,7 +166,6 @@ const deptColumnStyle = css`
   position: relative;
   z-index: 1;
 
-  /* 첫 번째 부서의 왼쪽 수평선 제거 (마스킹) */
   &:first-of-type::before {
     content: "";
     position: absolute;
@@ -151,7 +177,6 @@ const deptColumnStyle = css`
     z-index: 1;
   }
 
-  /* 마지막 부서의 오른쪽 수평선 제거 (마스킹) */
   &:last-of-type::after {
     content: "";
     position: absolute;
@@ -178,7 +203,6 @@ const nodeBoxStyle = (type: "root" | "department" | "team") => css`
   word-break: keep-all;
 `;
 
-/* 선 두께를 2px로 고정하여 끊김 현상 방지 */
 const verticalLineStyle = css`
   width: 2px;
   height: 50px;
@@ -201,8 +225,6 @@ const teamGroupStyle = css`
   flex-direction: column;
   gap: 8px;
 `;
-
-// --- [모바일 전용] 스타일 (기존과 동일하되 시인성 강화) ---
 
 const mobileCardWrapper = css`
   display: none;
@@ -258,4 +280,40 @@ const mobileTeamList = css`
   gap: 3px;
   font-size: 0.8rem;
   color: ${colors.gray[600]};
+`;
+
+/* 🧭 네비게이션 공통 스타일 */
+const asideStyle = css`
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  @media (max-width: 1024px) {
+    display: none;
+  }
+`;
+
+const navLinkStyle = (isActive: boolean) => css`
+  font-size: 0.7rem;
+  text-decoration: none;
+  color: ${isActive ? colors.primary : colors.gray[400]};
+  font-weight: ${isActive ? "bold" : "normal"};
+  transition: all 0.4s ease;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  letter-spacing: 0.05em;
+  &::after {
+    content: "";
+    width: ${isActive ? "30px" : "10px"};
+    height: 1px;
+    background: ${isActive ? colors.primary : colors.gray[300]};
+    transition: all 0.4s ease;
+  }
 `;

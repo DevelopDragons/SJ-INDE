@@ -3,21 +3,19 @@
 
 import { css } from "@emotion/react";
 import { motion, Variants } from "framer-motion";
-import { colors } from "@/src/styles/colors"; // 가정: styles/colors.ts 파일 존재
+import { colors } from "@/src/styles/colors";
 import { data_work_category, data_work_process } from "@/public/data/work";
-import SectionTitle from "@/src/components/text/SectionTitle";
+import PageSlogan from "@/src/components/text/PageSlogan";
 import WorkCategoryCard from "@/src/components/work/CategoryCard";
-import PageTitle from "@/src/components/text/PageTitle";
 import WorkProcessCard from "@/src/components/work/ProcessCard";
 
 export default function WorkPage() {
-  // Framer Motion 애니메이션 Variants
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1, // 자식 요소들이 순차적으로 애니메이션되도록
+        staggerChildren: 0.1,
       },
     },
   };
@@ -29,21 +27,20 @@ export default function WorkPage() {
 
   return (
     <div css={workPageContainerStyle}>
-      {/* Page Title Section */}
-      <PageTitle title={"BUSINESS"} subTitle={"사업 분야 및 프로세스"} />
-
       {/* Category Section */}
       <section css={categorySectionStyle}>
-        <div css={containerCustomStyle}>
-          <SectionTitle
-            title={"Work Category"}
-            subTitle={
-              "선준아이디는 다양한 분야에서 전문적인 서비스를 제공합니다"
-            }
-            underline={true}
-            variants={itemVariants}
-          />
+        <PageSlogan
+          topLabel="WORK CATEGORY"
+          title={
+            <>
+              Tailored <span className="outline">Spatial</span>{" "}
+              <span className="accent">Solutions.</span>
+            </>
+          }
+          description="전문적인 설계와 감각적인 디렉팅을 통해 주거부터 상업 공간까지 최상의 공간 가치를 제안합니다."
+        />
 
+        <div css={containerCustomStyle}>
           <motion.div
             css={categoryGridStyle}
             variants={containerVariants}
@@ -65,14 +62,18 @@ export default function WorkPage() {
 
       {/* Process Section */}
       <section id="process" css={processSectionStyle}>
-        <div css={containerCustomStyle}>
-          <SectionTitle
-            title={"Work Process"}
-            subTitle={"프로젝트의 전 과정을 단계별로 체계적으로 관리합니다."}
-            underline={true}
-            variants={itemVariants}
-          />
+        <PageSlogan
+          topLabel="WORK PROCESS"
+          title={
+            <>
+              Systematic <span className="outline">Design</span>{" "}
+              <span className="accent">Journey.</span>
+            </>
+          }
+          description="기획부터 완공까지, 선준아이디만의 체계적인 프로세스로 프로젝트의 완성도를 높입니다."
+        />
 
+        <div css={containerCustomStyle}>
           <motion.div
             css={processGridStyle}
             variants={containerVariants}
@@ -121,18 +122,18 @@ export default function WorkPage() {
   );
 }
 
-// --- Styles ---
-
 const workPageContainerStyle = css`
-  padding-top: 80px; /* 고정 헤더가 있다면 */
+  padding-top: 60px;
+  width: 100%;
 `;
 
 const containerCustomStyle = css`
-  max-width: 1280px;
+  max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  width: 100%;
 
   @media (max-width: 768px) {
     padding-left: 1rem;
@@ -142,37 +143,15 @@ const containerCustomStyle = css`
 
 // Category Section
 const categorySectionStyle = css`
-  padding-top: 6rem;
-  padding-bottom: 6rem;
+  padding-bottom: 8rem;
   background-color: ${colors.white};
 `;
 
 const categoryGridStyle = css`
   display: grid;
-  grid-template-columns: 1fr; /* 모바일: 1열 */
-  gap: 2rem;
-
-  /* 태블릿 및 작은 노트북 (768px 이상) */
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr); /* 2열 */
-  }
-
-  /* 데스크탑 (1024px 이상) */
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr); /* 3열 */
-  }
-`;
-// Process Section
-const processSectionStyle = css`
-  padding-top: 6rem;
-  padding-bottom: 6rem;
-  background-color: ${colors.gray[100]};
-`;
-
-const processGridStyle = css`
-  display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
+  margin-top: 2rem; /* 💡 음수 마진(-1rem) 제거하고 패딩 공간 확보 */
 
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
@@ -183,29 +162,40 @@ const processGridStyle = css`
   }
 `;
 
-const processCardStyle = css`
-  background-color: ${colors.white};
-  padding: 2rem;
-  border-radius: 0.5rem;
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  position: relative;
+// Process Section
+const processSectionStyle = css`
+  width: 100%;
+  padding-bottom: 7rem;
+  background-color: ${colors.gray[100]};
+  display: flex;
+  flex-direction: column;
+  /* 💡 애니메이션으로 인한 상단 삐져나침을 원천 차단하기 위해 섹션 자체에 숨김 처리 추가 */
   overflow: hidden;
-  transition: all 0.3s ease-in-out;
+`;
 
-  &:hover {
-    box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    transform: translateY(-5px);
+const processGridStyle = css`
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 2.5rem;
+  column-gap: 2rem;
+
+  /* 💡 핵심 수정: 마이너스 마진(-1rem)을 버리고, 
+     Framer motion이 위로 격하게(y: 50) 솟구쳐도 회색 영역 안에서 놀 수 있도록 상단 여백을 넉넉히 줍니다. */
+  margin-top: 7rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
   }
 `;
 
 // CTA Section
 const ctaSectionStyle = css`
-  padding-top: 6rem;
-  padding-bottom: 6rem;
+  padding-top: 8rem;
+  padding-bottom: 8rem;
   background-color: ${colors.primary};
   color: ${colors.white};
 `;
