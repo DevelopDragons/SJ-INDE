@@ -42,11 +42,9 @@ export default function HomePage() {
       const targetElement = document.getElementById(targetId);
 
       if (targetElement) {
-        // 부모 컨테이너 내부에서 해당 요소로 정확히 이동
         targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
-      // 애니메이션 대기 시간 (스크롤 속도에 맞춰 조절)
       setTimeout(() => {
         isScrolling.current = false;
       }, 800);
@@ -63,10 +61,8 @@ export default function HomePage() {
       const current = activeIdxRef.current;
 
       if (e.deltaY > 50) {
-        // 아래로
         if (current < sectionIds.length - 1) scrollToSection(current + 1);
       } else if (e.deltaY < -50) {
-        // 위로
         if (current > 0) scrollToSection(current - 1);
       }
     };
@@ -76,7 +72,8 @@ export default function HomePage() {
   }, [scrollToSection, sectionIds.length]);
 
   return (
-    <>
+    // 💡 1. 최상단에 .is-main-page를 주어 RootLayout이 감지하도록 하고, pageContainerStyle을 한 번만 먹입니다.
+    <div className="is-main-page" css={pageContainerStyle}>
       <Global
         styles={css`
           html,
@@ -88,48 +85,48 @@ export default function HomePage() {
           }
         `}
       />
-      <div css={pageContainerStyle}>
-        {/* 사이드 내비게이션 - activeIdx 상태에 따라 즉각 반응 */}
-        <aside css={asideStyle}>
-          {sectionIds.map((id, index) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              css={navLinkStyle(activeIdx === index)}
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToSection(index);
-              }}
-            >
-              {id.toUpperCase()}
-            </a>
-          ))}
-        </aside>
 
-        <main css={mainWrapperStyle}>
-          {data_main.map((sec) => (
-            <BasicSection
-              key={sec.id}
-              sec={sec}
-              // 마우스 클릭 시 다음 섹션 이동을 위해 index 전달 (선택사항)
-              onNext={() => scrollToSection(activeIdxRef.current + 1)}
-              sectionRef={() => {}}
-            />
-          ))}
+      {/* 사이드 내비게이션 */}
+      <aside css={asideStyle}>
+        {sectionIds.map((id, index) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            css={navLinkStyle(activeIdx === index)}
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection(index);
+            }}
+          >
+            {id.toUpperCase()}
+          </a>
+        ))}
+      </aside>
 
-          {/* 컨택트 섹션 id="contact"가 내부 <section>에 반드시 있어야 함 */}
-          <ContactSection sectionRef={() => {}} />
-        </main>
+      {/* 💡 2. 기존 중복 <main> 태그와 불필요한 중복 래퍼 div를 걷어내고 하나로 통합했습니다. */}
+      <div css={mainWrapperStyle}>
+        {data_main.map((sec) => (
+          <BasicSection
+            key={sec.id}
+            sec={sec}
+            onNext={() => scrollToSection(activeIdxRef.current + 1)}
+            sectionRef={() => {}}
+          />
+        ))}
+
+        {/* 컨택트 섹션 */}
+        <ContactSection sectionRef={() => {}} />
       </div>
-    </>
+    </div>
   );
 }
 
+// --- Styles ---
 const pageContainerStyle = css({
   height: "100vh",
   width: "100%",
   position: "relative",
-  overflow: "hidden", // 내부 mainWrapper에서만 움직이도록 설정
+  overflow: "hidden",
 });
 
 const mainWrapperStyle = css({
@@ -137,13 +134,12 @@ const mainWrapperStyle = css({
   width: "100%",
 });
 
-// asideStyle, navLinkStyle은 기존과 동일하되 z-index 확인
 const asideStyle = css({
   position: "fixed",
   right: "40px",
   top: "50%",
   transform: "translateY(-50%)",
-  zIndex: 1000, // 최상단 유지
+  zIndex: 1000,
   display: "flex",
   flexDirection: "column",
   gap: "1.5rem",

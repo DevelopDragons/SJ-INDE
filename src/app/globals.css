@@ -62,3 +62,17 @@ body {
 .fw-900 {
   font-weight: 900;
 }
+
+/* 기본적으로 모든 페이지의 main 영역은 헤더 크기(90px)만큼 확보 */
+main {
+  padding-top: 90px;
+  min-height: calc(100vh - 90px);
+  box-sizing: border-box;
+  background-color: #ffffff;
+}
+
+/* 💡 메인 페이지 내부 요소에 .is-main-page가 감지되면 상단 패딩을 0으로 상쇄 */
+main:has(.is-main-page) {
+  padding-top: 0;
+  min-height: 100vh;
+}
