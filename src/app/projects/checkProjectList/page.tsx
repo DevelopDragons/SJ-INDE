@@ -14,6 +14,14 @@ interface Project {
   uploadCheck: number;
 }
 
+// 💡 모달 상태 관리를 위한 인터페이스 추가
+interface ToggleModalState {
+  isOpen: boolean;
+  projectId: number | null;
+  currentStatus: number | null;
+  projectTitle: string;
+}
+
 export default function AdminProjectCheckPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -22,6 +30,14 @@ export default function AdminProjectCheckPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 8;
+
+  // 💡 모달 상태 추가
+  const [confirmModal, setConfirmModal] = useState<ToggleModalState>({
+    isOpen: false,
+    projectId: null,
+    currentStatus: null,
+    projectTitle: "",
+  });
 
   // 데이터 패치
   useEffect(() => {
@@ -72,8 +88,21 @@ export default function AdminProjectCheckPage() {
     return Math.ceil(filteredProjects.length / itemsPerPage);
   }, [filteredProjects.length]);
 
-  // 토글 상태 변경 API 핸들러
-  const handleToggleUpload = async (projectId: number, currentStatus: number) => {
+  // 💡 토글 스위치 클릭 시 모달을 먼저 띄우는 핸들러
+  const openConfirmModal = (project: Project) => {
+    setConfirmModal({
+      isOpen: true,
+      projectId: project.id,
+      currentStatus: project.uploadCheck,
+      projectTitle: project.title,
+    });
+  };
+
+  // 💡 모달에서 '확인'을 눌렀을 때 실제로 API를 호출하는 함수
+  const handleToggleUpload = async () => {
+    const { projectId, currentStatus } = confirmModal;
+    if (projectId === null || currentStatus === null) return;
+
     const nextStatus = currentStatus === 1 ? 0 : 1;
     try {
       const res = await fetch(`/api/projects/${projectId}`, {
@@ -92,6 +121,9 @@ export default function AdminProjectCheckPage() {
     } catch (err) {
       console.error("Toggle Error:", err);
       alert("상태 변경 중 오류가 발생했습니다.");
+    } finally {
+      // 모달 닫기 및 초기화
+      setConfirmModal({ isOpen: false, projectId: null, currentStatus: null, projectTitle: "" });
     }
   };
 
@@ -181,10 +213,11 @@ export default function AdminProjectCheckPage() {
                       {selectedProject.uploadCheck === 1 ? "사용자 화면 노출 ON" : "사용자 화면 노출 OFF"}
                     </span>
                     <label css={switchStyle}>
+                      {/* 💡 onChange에서 바로 API를 쏘지 않고 모달을 오픈하도록 수정 */}
                       <input
                         type="checkbox"
                         checked={selectedProject.uploadCheck === 1}
-                        onChange={() => handleToggleUpload(selectedProject.id, selectedProject.uploadCheck)}
+                        onChange={() => openConfirmModal(selectedProject)}
                       />
                       <span className="slider" />
                     </label>
@@ -207,7 +240,6 @@ export default function AdminProjectCheckPage() {
                       {imageList.map((imgName, index) => (
                         <div key={index} css={imageCardLayoutStyle}>
                           <div css={thumbnailBoxStyle}>
-                            {/* ✅ 수정페이지 규칙과 일치하도록 /uploads/${imgName} 로 주소 변경 */}
                             <img 
                               src={`/uploads/${imgName}`} 
                               alt={`preview-${index}`}
@@ -235,11 +267,50 @@ export default function AdminProjectCheckPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ================= 💡 팝업 컨펌 모달 추가 구역 ================= */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div css={modalOverlayStyle}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              css={modalContentStyle}
+            >
+              <h3>노출 상태 변경 확인</h3>
+              <p className="project-title">[{confirmModal.projectTitle}]</p>
+              <p className="description">
+                해당 프로젝트의 상태를{" "}
+                <strong>
+                  {confirmModal.currentStatus === 1 ? "['숨김']" : "['노출중']"}
+                </strong>
+                으로 변경하시겠습니까?
+              </p>
+              
+              <div css={modalButtonGroupStyle}>
+                <button 
+                  className="cancel-btn" 
+                  onClick={() => setConfirmModal({ isOpen: false, projectId: null, currentStatus: null, projectTitle: "" })}
+                >
+                  취소
+                </button>
+                <button className="confirm-btn" onClick={handleToggleUpload}>
+                  변경하기
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // --- Styles ---
+
+// ... (이전 기존 스타일 코드 모두 동일 유지) ...
 
 const adminPageContainerStyle = css`
   padding: 120px 60px 60px 60px;
@@ -314,89 +385,28 @@ const detailBodyStyle = css`
 `;
 const detailSubTitleStyle = css` font-size: 1rem; color: #444; line-height: 1.5; margin-bottom: 25px; `;
 
-// 🗂️ 가로 정렬 3열 그리드 형태의 이미지 목록 스타일 정의
 const imageGridListStyle = css`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  max-height: 450px;
-  overflow-y: auto;
-  padding-right: 6px;
-  margin-top: 10px;
-
-  @media (max-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-height: 450px; overflow-y: auto; padding-right: 6px; margin-top: 10px;
+  @media (max-width: 640px) { grid-template-columns: repeat(2, 1fr); }
 `;
 
 const imageCardLayoutStyle = css`
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  background-color: #fdfdfd;
-  overflow: hidden;
-  transition: transform 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  }
+  display: flex; flex-direction: column; border: 1px solid #e5e5e5; border-radius: 8px; background-color: #fdfdfd; overflow: hidden; transition: transform 0.2s ease;
+  &:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
 `;
 
 const thumbnailBoxStyle = css`
-  width: 100%;
-  height: 120px;
-  background-color: #eaeaea;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  width: 100%; height: 120px; background-color: #eaeaea; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  img { width: 100%; height: 100%; object-fit: cover; }
 `;
 
 const mainThumbnailBadgeStyle = css`
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background-color: rgba(197, 164, 126, 0.95);
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: bold;
-  padding: 3px 6px;
-  border-radius: 4px;
-  letter-spacing: -0.02em;
+  position: absolute; top: 8px; left: 8px; background-color: rgba(197, 164, 126, 0.95); color: #fff; font-size: 0.65rem; font-weight: bold; padding: 3px 6px; border-radius: 4px; letter-spacing: -0.02em;
 `;
 
-const imageNameBoxStyle = css`
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background-color: #fff;
-  border-top: 1px solid #f0f0f0;
-`;
-
-const imageIndexStyle = css`
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #888;
-`;
-
-const imageTextNameStyle = css`
-  font-size: 0.8rem;
-  color: #444;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-`;
-
+const imageNameBoxStyle = css` padding: 10px; display: flex; flex-direction: column; gap: 4px; background-color: #fff; border-top: 1px solid #f0f0f0; `;
+const imageIndexStyle = css` font-size: 0.75rem; font-weight: 700; color: #888; `;
+const imageTextNameStyle = css` font-size: 0.8rem; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; `;
 const detailFileEmptyStyle = css` font-size: 0.9rem; color: #999; font-style: italic; `;
 const emptyDetailStyle = css` border: 2px dashed #e5e5e5; border-radius: 12px; padding: 80px 0; text-align: center; color: #999; font-size: 1rem; `;
 const noDataStyle = css` text-align: center; padding: 40px 0; color: #aaa; `;
@@ -411,4 +421,81 @@ const switchStyle = css`
   input:checked + .slider { background-color: #1f874c; }
   input:focus + .slider { box-shadow: 0 0 1px #1f874c; }
   input:checked + .slider::before { transform: translateX(24px); }
+`;
+
+
+// ================= 💡 새롭게 추가된 모달 관련 스타일 가이드 =================
+
+const modalOverlayStyle = css`
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* 헤더나 페이지 내 다른 요소 위에 배치 */
+`;
+
+const modalContentStyle = css`
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  text-align: center;
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 12px;
+  }
+
+  .project-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 16px;
+    word-break: break-all;
+  }
+
+  .description {
+    font-size: 1rem;
+    color: #444;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    strong {
+      color: ${colors?.primary || "#9e0012"};
+    }
+  }
+`;
+
+const modalButtonGroupStyle = css`
+  display: flex;
+  gap: 12px;
+  
+  button {
+    flex: 1;
+    padding: 12px 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .cancel-btn {
+    background-color: #f1f1f1;
+    color: #555;
+    &:hover { background-color: #e5e5e5; }
+  }
+
+  .confirm-btn {
+    background-color: ${colors?.primary || "#9e0012"};
+    color: #fff;
+    &:hover { opacity: 0.9; }
+  }
 `;
