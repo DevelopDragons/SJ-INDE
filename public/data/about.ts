@@ -1,3 +1,5 @@
+import { data_contact } from "./contact";
+
 interface About {
   desc: string;
   ceo: string;
@@ -10,7 +12,7 @@ export const data_about: About = {
 기획부터 설계·시공·감리까지 전 과정을 통합적으로 수행합니다.
 건축의 맥락과 사용자의 경험, 브랜드의 가치를 균형 있게 담아
 완성도 높은 공간을 구현합니다.`,
-  ceo: "박 대 식",
+  ceo: data_contact.representative,
   message: `시대의 발전은 인간에게 보다 풍요로운 삶과 문화를 제공하고 있으며,
 이러한 변화는 삶의 질을 향상시키는 동시에
 공간에 대한 새로운 기준과 가능성을 만들어가고 있습니다.

@@ -103,7 +103,8 @@ export default function CompanyAboutPage() {
               <motion.div css={ceoSignAreaStyle} variants={revealVariants}>
                 <div css={dividerStyle} />
                 <p css={ceoNameStyle}>
-                  <strong>SUNJUN ID</strong> 대표 <span>{data_about.ceo}</span>
+                  <strong>SUNJUN ID</strong> 대표{" "}
+                  <span>{data_about.ceo.split("").join(" ")}</span>
                 </p>
               </motion.div>
             </motion.div>

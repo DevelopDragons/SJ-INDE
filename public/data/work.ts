@@ -32,9 +32,9 @@ export interface WorkProcess {
 export const data_work_category: WorkCategory[] = [
   {
     title: "실내건축공사업",
-    subTitle: "Interior Architecture & Construction",
+    subTitle: "Interior Architecture",
     description:
-      "풍부한 현장 노하우와 시공 기술력을 바탕으로 주거, 상업, 업무 공간 등 모든 실내 건축 분야에서 최상의 시공 품질을 보장합니다.",
+      "풍부한 현장 노하우와 시공 기술력으로 주거, 상업, 업무 공간 등 모든 실내 건축 분야에서 최상의 시공 품질을 보장합니다.",
     items: [
       "신축 및 보수공사",
       "공정별 정밀 시공",
@@ -45,11 +45,11 @@ export const data_work_category: WorkCategory[] = [
   },
   {
     title: "건물 리모델링",
-    subTitle: "Building Transformation & Renovation",
+    subTitle: "Building Remodeling",
     description:
       "노후화된 건축물의 가치를 재해석하여 구조 보강부터 외관 개선까지 아우르는 통합 리모델링 솔루션을 제안합니다.",
     items: [
-      "구조 진단 및 보강",
+      // "구조 진단 및 보강",
       "외관 디자인 변경",
       "용도 변경 컨설팅",
       "에너지 효율 최적화",

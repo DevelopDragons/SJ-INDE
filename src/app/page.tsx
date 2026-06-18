@@ -10,25 +10,25 @@ import ContactSection from "../components/main/ContactSection";
 export default function HomePage() {
   const [activeIdx, setActiveIdx] = useState(0);
   const isScrolling = useRef(false);
-  const activeIdxRef = useRef(0); // 실시간 인덱스 참조용
+  const activeIdxRef = useRef(0);
 
   const sectionIds = [...data_main.map((d) => d.id), "contact"];
 
   useEffect(() => {
-    // 1. 메인 페이지 진입 시 스크롤 차단
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    document.body.style.height = "100%";
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+      document.body.style.height = "100%";
+    }
 
     return () => {
-      // 2. 다른 페이지로 이동(Unmount) 시 스크롤 복구
       document.documentElement.style.overflow = "auto";
       document.body.style.overflow = "auto";
       document.body.style.height = "auto";
     };
   }, []);
 
-  // 인덱스 이동 함수
   const scrollToSection = useCallback(
     (index: number) => {
       if (index < 0 || index >= sectionIds.length || isScrolling.current)
@@ -36,7 +36,7 @@ export default function HomePage() {
 
       isScrolling.current = true;
       setActiveIdx(index);
-      activeIdxRef.current = index; // Ref 업데이트
+      activeIdxRef.current = index;
 
       const targetId = sectionIds[index];
       const targetElement = document.getElementById(targetId);
@@ -52,9 +52,10 @@ export default function HomePage() {
     [sectionIds],
   );
 
-  // 휠 이벤트 핸들러
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
+      if (window.innerWidth <= 768) return;
+
       if (e.cancelable) e.preventDefault();
       if (isScrolling.current) return;
 
@@ -72,21 +73,51 @@ export default function HomePage() {
   }, [scrollToSection, sectionIds.length]);
 
   return (
-    // 💡 1. 최상단에 .is-main-page를 주어 RootLayout이 감지하도록 하고, pageContainerStyle을 한 번만 먹입니다.
     <div className="is-main-page" css={pageContainerStyle}>
       <Global
         styles={css`
-          html,
-          body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* 전체 브라우저 스크롤 차단 */
-            height: 100%;
+          @media (min-width: 769px) {
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              height: 100%;
+            }
+          }
+
+          /* 💡 [수정] 모바일 화면에서 CLICK TO EXPLORE 영역 무조건 날려버리기 */
+          @media (max-width: 768px) {
+            /* 클래스명과 관계없이 BasicSection 내부 구조(div나 section) 안에서 
+              가장 아래쪽에 절대 좌표(position: absolute/fixed)로 띄워진 
+              마우스 아이콘 및 텍스트 박스 형태를 통째로 덮어씌워 지웁니다.
+            */
+            div[css*="mainWrapperStyle"] section div,
+            div[css*="mainWrapperStyle"] section button,
+            div[css*="mainWrapperStyle"] section p,
+            .click-to-explore,
+            [class*="explore"],
+            [class*="mouse"] {
+              /* 텍스트 내용물에 'CLICK TO EXPLORE' 혹은 마우스 형태를 품고 있는 컴포넌트 은닉 */
+              &:has(svg),
+              &:has(span),
+              & {
+                /* 마크업 상 맨 밑에 고정된 하단 화살표/마우스 버튼 레이아웃 원천 차단 */
+                bottom: 0;
+              }
+            }
+
+            /* 가장 확실한 방법: BasicSection 내부에 독립적으로 존재하는 '화살표/마우스 컨테이너' 컴포넌트 저격 */
+            section > div:last-child {
+              /* 만약 마우스 버튼이 섹션 내부의 맨 마지막 자식 요소로 들어가 있다면 컷합니다. */
+              opacity: 0 !important;
+              display: none !important;
+              pointer-events: none !important;
+            }
           }
         `}
       />
 
-      {/* 사이드 내비게이션 */}
       <aside css={asideStyle}>
         {sectionIds.map((id, index) => (
           <a
@@ -103,36 +134,46 @@ export default function HomePage() {
         ))}
       </aside>
 
-      {/* 💡 2. 기존 중복 <main> 태그와 불필요한 중복 래퍼 div를 걷어내고 하나로 통합했습니다. */}
       <div css={mainWrapperStyle}>
         {data_main.map((sec) => (
           <BasicSection
             key={sec.id}
             sec={sec}
-            onNext={() => scrollToSection(activeIdxRef.current + 1)}
+            onNext={() => {
+              if (window.innerWidth > 768) {
+                scrollToSection(activeIdxRef.current + 1);
+              }
+            }}
             sectionRef={() => {}}
           />
         ))}
 
-        {/* 컨택트 섹션 */}
         <ContactSection sectionRef={() => {}} />
       </div>
     </div>
   );
 }
 
-// --- Styles ---
-const pageContainerStyle = css({
-  height: "100vh",
-  width: "100%",
-  position: "relative",
-  overflow: "hidden",
-});
+const pageContainerStyle = css`
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
 
-const mainWrapperStyle = css({
-  height: "100%",
-  width: "100%",
-});
+  @media (max-width: 768px) {
+    height: auto;
+    overflow: visible;
+  }
+`;
+
+const mainWrapperStyle = css`
+  height: 100%;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    height: auto;
+  }
+`;
 
 const asideStyle = css({
   position: "fixed",
