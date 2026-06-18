@@ -6,7 +6,13 @@ import { css } from "@emotion/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { colors } from "@/src/styles/colors";
-import PageTitle from "@/src/components/text/PageTitle";
+
+interface Project {
+  id: number;
+  title: string;
+  subTitle: string;
+  saveNames: string | null;
+}
 
 export default function ProjectWritePage() {
   const router = useRouter();
@@ -135,11 +141,7 @@ export default function ProjectWritePage() {
 
   return (
     <div css={writePageContainerStyle}>
-      {/* <PageTitle
-        title="CREATE PROJECTS"
-        subTitle="새로운 프리미엄 공간 디자인 프로젝트를 등록합니다."
-      /> */}
-
+      {/* 💡 상단 패딩 영역과 본문 영역 전체를 흰색으로 밀봉하여 네이비색 노출 차단 */}
       <section css={formSectionStyle}>
         <motion.div
           css={formWrapperStyle}
@@ -345,35 +347,30 @@ export default function ProjectWritePage() {
 
 // --- Styles ---
 
-// 💡 [핵심 변경] 전체 컨테이너의 바탕색을 하얀색이 아닌 어두운색(colors.gray[900])으로 변경합니다.
-// 이렇게 하면 헤더와 슬로건 사이가 1px이라도 찢어질 때 하얀 공백 대신 어두운색이 깔려 완벽히 은폐됩니다.
+// 💡 [변경] 상단 여백(padding-top)을 완전히 제거하여 컨테이너가 찢어지는 틈새를 차단합니다.
 const writePageContainerStyle = css`
   width: 100%;
   min-height: 100vh;
-  padding-top: 80px;
-  background-color: ${colors.gray[900]};
+  background-color: ${colors.white}; /* 전체 기본 배경을 흰색으로 통일 */
 `;
 
-// 💡 [수정] 본문 입력창 구역은 정상적으로 하얀색 배경을 명시해 줍니다.
+// 💡 [변경] 상단 고정 헤더 영역(80px)을 확보하는 padding-top을 본문 섹션에 직접 적용하고, 
+// 배경색을 완전한 흰색으로 선언하여 네이비색 박스를 완전히 밀봉합니다.
 const formSectionStyle = css`
   width: 100%;
   background-color: ${colors.white};
+  padding-top: 120px; /* 고정 헤더(80px) 확보 및 넉넉한 상단 여백 레이아웃 지정 */
   padding-bottom: 120px;
   position: relative;
   z-index: 10;
-
-  /* PageTitle 내부 소수점 픽셀 번짐 차단용 보정 마진 */
-  margin-top: -2px;
-  padding-top: 2px;
 `;
 
 const formWrapperStyle = css`
   max-width: 800px;
-  margin: 4rem auto 0 auto;
+  margin: 0 auto;
   padding: 0 40px;
   @media (max-width: 768px) {
     padding: 0 20px;
-    margin-top: 3rem;
   }
 `;
 

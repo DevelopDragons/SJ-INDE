@@ -1,12 +1,10 @@
 /** @jsxImportSource @emotion/react */
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { css } from "@emotion/react";
 import { motion, Variants, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 import { colors } from "@/src/styles/colors";
-import PageTitle from "@/src/components/text/PageTitle";
 import ProjectListCard from "@/src/components/project/ProjectListCard";
 
 interface Project {
@@ -17,8 +15,6 @@ interface Project {
 }
 
 export default function ProjectPage() {
-  const router = useRouter();
-
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -26,10 +22,6 @@ export default function ProjectPage() {
 
   const [tempSearchTerm, setTempSearchTerm] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-
-  const handleAdminAccess = useCallback(() => {
-    router.push("/projects/write");
-  }, [router]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -143,12 +135,6 @@ export default function ProjectPage() {
 
   return (
     <div css={projectPageContainerStyle}>
-      {/* <PageTitle
-        title="PROJECTS"
-        subTitle="프리미엄 공간 디자인 포트폴리오"
-      /> */}
-
-      {/* 💡 WorkPage 구조 도입: 각각의 독립된 흰색 section 레이어로 틈새 완전 밀봉 */}
       <section css={contentSectionStyle}>
         <div css={contentWrapperStyle}>
           {/* 메인 슬로건 섹션 */}
@@ -165,22 +151,7 @@ export default function ProjectPage() {
               <motion.h2 css={bigSloganStyle} variants={revealVariants}>
                 <span className="accent">Crafting</span>{" "}
                 <span className="outline">Inspiring</span>{" "}
-                <span className="accent">
-                  Spaces
-                  <span
-                    onDoubleClick={handleAdminAccess}
-                    style={{
-                      userSelect: "none",
-                      cursor: "pointer",
-                      display: "inline-block",
-                      paddingLeft: "2px",
-                      paddingRight: "10px",
-                    }}
-                    title="관리자 아카이브 등록"
-                  >
-                    .
-                  </span>
-                </span>
+                <span className="accent">Spaces.</span>
               </motion.h2>
             </motion.div>
           </div>
@@ -323,11 +294,9 @@ export default function ProjectPage() {
 // --- Styles ---
 
 const projectPageContainerStyle = css`
-  padding-top: 80px; /* 고정 헤더 자리를 완벽히 비워두는 WorkPage 컨테이너 방식 */
+  padding-top: 80px;
 `;
 
-/* 💡 핵심: WorkPage의 categorySectionStyle 구조를 그대로 이식. 
-   배경색을 흰색으로 명시하여 타이틀과의 경계선 소수점 공백을 완벽 차단합니다. */
 const contentSectionStyle = css`
   padding-bottom: 160px;
   background-color: ${colors.white};
@@ -370,7 +339,7 @@ const bigSloganStyle = css`
   line-height: 1.1;
   color: ${colors.primary};
   margin-bottom: 3rem;
-  letter-spacing: -0.03em; /* 전체적으로 자간을 조여서 단단한 느낌 부여 */
+  letter-spacing: -0.03em;
 
   .outline {
     color: transparent;
@@ -379,19 +348,18 @@ const bigSloganStyle = css`
     transition: opacity 0.3s ease;
 
     &:hover {
-      opacity: 0.8; /* 호버 시 살짝 더 진해지는 인터렉션 (선택 사항) */
+      opacity: 0.8;
     }
   }
 
   .accent {
     color: ${colors.primary};
-    /* Essence 부분에 미세한 강조 효과를 주고 싶다면 여기에 추가 */
   }
 
   @media (max-width: 768px) {
     font-size: 2.8rem;
     .outline {
-      -webkit-text-stroke: 1px ${colors.primary}; /* 모바일은 다시 얇게 */
+      -webkit-text-stroke: 1px ${colors.primary};
     }
   }
 `;
