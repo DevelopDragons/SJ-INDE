@@ -10,7 +10,7 @@ export async function GET() {
     try {
         const [rows] = await pool.query(`
             SELECT 
-                a.id, a.title, a.subTitle, a.updatedAt, 
+                a.id, a.title, a.subTitle, a.updatedAt, a.uploadCheck,
                 GROUP_CONCAT(b.saveName) as saveNames 
             FROM project a 
             LEFT JOIN files b ON a.id = b.project_id 

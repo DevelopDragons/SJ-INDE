@@ -12,7 +12,10 @@ interface Project {
   title: string;
   subTitle: string;
   saveNames: string | null;
+  uploadCheck: number; // ✅ 추가된 노출 제어 필드
 }
+
+
 
 export default function ProjectPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -59,6 +62,8 @@ export default function ProjectPage() {
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
 
+        console.log(data);
+
         if (isMounted && Array.isArray(data)) {
           const sortedData = [...data].sort(
             (a: Project, b: Project) => b.id - a.id,
@@ -76,10 +81,17 @@ export default function ProjectPage() {
     };
   }, []);
 
+  // 💡 노출 제어 상태(uploadCheck === 1) 조건 필터링 반영
   const filteredProjects = useMemo(() => {
-    if (!searchTerm || !searchTerm.trim()) return projects;
+    // 1. 관리자 화면에서 '노출중(1)' 상태로 지정한 프로젝트만 1차 추출
+    const visibleProjects = projects.filter((project) => project.uploadCheck === 1);
+
+    // 2. 검색어가 없다면 노출 가능한 프로젝트 전체 반환
+    if (!searchTerm || !searchTerm.trim()) return visibleProjects;
+
+    // 3. 검색어가 입력되었다면 노출 가능한 프로젝트 내에서 타이틀 매칭 검색 수행
     const normalizedSearch = searchTerm.replace(/\s+/g, "").toLowerCase();
-    return projects.filter((project) => {
+    return visibleProjects.filter((project) => {
       if (!project.title) return false;
       const normalizedTitle = project.title.replace(/\s+/g, "").toLowerCase();
       return normalizedTitle.includes(normalizedSearch);
@@ -442,6 +454,7 @@ const clearButtonStyle = css`
 const gridSectionStyle = css`
   margin-top: 35px;
 `;
+
 const gridContainerStyle = css`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
