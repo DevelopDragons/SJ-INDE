@@ -20,7 +20,7 @@ export const data_contact: Contact = {
   headquarter: "서울시 강남구 강남대로 320, 1108호",
   branches: ["경기도 하남시 감초로 184번길 65"],
   brn: "271-88-01313",
-  representative: "박경균",
+  representative: "박대식",
 };
 
 export const contactDataList: ContactDataSet[] = [
