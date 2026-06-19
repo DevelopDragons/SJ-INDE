@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
         // 3. 프로젝트(게시글) DB 생성
         const [result] = await pool.query(
-            "INSERT INTO project (title, subTitle, createdAt, updatedAt) VALUES (?, ?, ?, ?)",
+            "INSERT INTO project (title, subTitle, createdAt, updatedAt, uploadCheck) VALUES (?, ?, ?, ?, 1)",
             [title, subTitle, now, now]
         ) as [ResultSetHeader, unknown];
 

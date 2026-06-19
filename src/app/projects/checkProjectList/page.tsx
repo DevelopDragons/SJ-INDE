@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { css } from "@emotion/react";
-import { motion, Variants, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { colors } from "@/src/styles/colors";
 
 interface Project {
@@ -14,12 +14,13 @@ interface Project {
   uploadCheck: number;
 }
 
-// 💡 모달 상태 관리를 위한 인터페이스 추가
-interface ToggleModalState {
+// 💡 보안 및 토글 처리를 위한 통합 모달 상태 인터페이스
+interface AuthModalState {
   isOpen: boolean;
-  projectId: number | null;
-  currentStatus: number | null;
-  projectTitle: string;
+  mode: "ENTRY" | "TOGGLE"; // 페이지 진입 인증 vs 토글 변경 인증
+  targetProjectId: number | null;
+  targetCurrentStatus: number | null;
+  targetProjectTitle: string;
 }
 
 export default function AdminProjectCheckPage() {
@@ -31,16 +32,47 @@ export default function AdminProjectCheckPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 8;
 
-  // 💡 모달 상태 추가
-  const [confirmModal, setConfirmModal] = useState<ToggleModalState>({
+  // 💡 보안 및 인증 관련 상태
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>("");
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  // 💡 통합 인증 모달 상태 관리
+  const [authModal, setAuthModal] = useState<AuthModalState>({
     isOpen: false,
-    projectId: null,
-    currentStatus: null,
-    projectTitle: "",
+    mode: "ENTRY",
+    targetProjectId: null,
+    targetCurrentStatus: null,
+    targetProjectTitle: "",
   });
 
-  // 데이터 패치
+  // 1. 페이지 최초 진입 시 비밀번호 인증 모달 강제 오픈
   useEffect(() => {
+    setAuthModal({
+      isOpen: true,
+      mode: "ENTRY",
+      targetProjectId: null,
+      targetCurrentStatus: null,
+      targetProjectTitle: "",
+    });
+  }, []);
+
+  // 💡 모달이 열리면 패스워드 인풋에 포커스를 안전하게 주입 (하이드레이션 충돌 방지)
+  useEffect(() => {
+    if (authModal.isOpen) {
+      const timer = setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [authModal.isOpen]);
+
+  // 2. 인증이 완료된 후에만 백엔드로부터 프로젝트 리스트 패치 수행
+  useEffect(() => {
+    if (!isAuthorized) return;
+
     let isMounted = true;
     const fetchData = async () => {
       try {
@@ -64,7 +96,7 @@ export default function AdminProjectCheckPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isAuthorized]);
 
   // 검색 필터링
   const filteredProjects = useMemo(() => {
@@ -88,46 +120,87 @@ export default function AdminProjectCheckPage() {
     return Math.ceil(filteredProjects.length / itemsPerPage);
   }, [filteredProjects.length]);
 
-  // 💡 토글 스위치 클릭 시 모달을 먼저 띄우는 핸들러
-  const openConfirmModal = (project: Project) => {
-    setConfirmModal({
+  // 💡 토글 스위치 변경 핸들러 -> 비밀번호 입력 상태로 모달 오픈
+  const openToggleAuthModal = (project: Project) => {
+    setPassword("");
+    setAuthModal({
       isOpen: true,
-      projectId: project.id,
-      currentStatus: project.uploadCheck,
-      projectTitle: project.title,
+      mode: "TOGGLE",
+      targetProjectId: project.id,
+      targetCurrentStatus: project.uploadCheck,
+      targetProjectTitle: project.title,
     });
   };
 
-  // 💡 모달에서 '확인'을 눌렀을 때 실제로 API를 호출하는 함수
-  const handleToggleUpload = async () => {
-    const { projectId, currentStatus } = confirmModal;
-    if (projectId === null || currentStatus === null) return;
+  // 💡 비밀번호 검증 API 호출 및 처리 후속 로직
+  const handleVerifyPassword = async () => {
+    if (!password.trim()) {
+      alert("비밀번호를 입력해주세요.");
+      return;
+    }
+    setIsVerifying(true);
 
-    const nextStatus = currentStatus === 1 ? 0 : 1;
     try {
-      const res = await fetch(`/api/projects/${projectId}`, {
+      // API 라우트를 수정 페이지와 통합 사용하거나 기존 비밀번호 검증 라우트(/api/projects/verify) 호출
+      const verifyRes = await fetch("/api/projects/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() }),
+      });
+
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) throw new Error(verifyData.message || "비밀번호가 일치하지 않습니다.");
+
+      // Case A: 페이지 첫 진입 인증 성공 시
+      if (authModal.mode === "ENTRY") {
+        setIsAuthorized(true);
+        setAuthModal(prev => ({ ...prev, isOpen: false }));
+        setPassword("");
+        return;
+      }
+
+      // Case B: 토글 스위치 조작 인증 성공 시 실제 데이터 변경 요청 진행
+      const { targetProjectId, targetCurrentStatus } = authModal;
+      if (targetProjectId === null || targetCurrentStatus === null) return;
+
+      const nextStatus = targetCurrentStatus === 1 ? 0 : 1;
+      const res = await fetch(`/api/projects/${targetProjectId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uploadCheck: nextStatus }),
       });
       if (!res.ok) throw new Error("토글 상태 업데이트 실패");
 
+      // 성공 후 상태 동기화
       setProjects((prev) =>
-        prev.map((p) => (p.id === projectId ? { ...p, uploadCheck: nextStatus } : p))
+        prev.map((p) => (p.id === targetProjectId ? { ...p, uploadCheck: nextStatus } : p))
       );
-      if (selectedProject && selectedProject.id === projectId) {
+      if (selectedProject && selectedProject.id === targetProjectId) {
         setSelectedProject((prev) => prev ? { ...prev, uploadCheck: nextStatus } : null);
       }
-    } catch (err) {
-      console.error("Toggle Error:", err);
-      alert("상태 변경 중 오류가 발생했습니다.");
+
+      alert(`[${authModal.targetProjectTitle}] 노출 상태가 정상적으로 변경되었습니다.`);
+      setAuthModal({ isOpen: false, mode: "ENTRY", targetProjectId: null, targetCurrentStatus: null, targetProjectTitle: "" });
+      setPassword("");
+    } catch (err: unknown) {
+      console.error(err);
+      if (err instanceof Error) alert(err.message);
+      else alert("인증 처리 도중 오류가 발생했습니다.");
     } finally {
-      // 모달 닫기 및 초기화
-      setConfirmModal({ isOpen: false, projectId: null, currentStatus: null, projectTitle: "" });
+      setIsVerifying(false);
     }
   };
 
-  // 💡 수정 페이지와 동일하게 콤마(,) 기준 split 구조로 매핑
+  // 모달 취소 버튼 누를 때 핸들러
+  const handleModalCancel = () => {
+    setAuthModal(prev => ({ ...prev, isOpen: false }));
+    setPassword("");
+    if (authModal.mode === "ENTRY") {
+      // 첫 페이지 진입 인증을 취소하면 전 페이지로 튕김 처리
+      window.history.back();
+    }
+  };
+
   const imageList = useMemo(() => {
     if (!selectedProject?.saveNames) return [];
     return selectedProject.saveNames
@@ -135,6 +208,52 @@ export default function AdminProjectCheckPage() {
       .map((name) => name.trim())
       .filter((name) => name.length > 0);
   }, [selectedProject]);
+
+  // 💡 [중요] 최초 권한 승인 전 레이아웃 블로킹 및 모달 출력
+  if (!isAuthorized) {
+    return (
+      <div css={loadingContainerStyle}>
+        <p>보안 인증을 진행 중입니다...</p>
+        <AnimatePresence>
+          {authModal.isOpen && (
+            <div css={modalOverlayStyle}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", duration: 0.4 }}
+                css={modalContentStyle}
+              >
+                <h3>관리자 인증</h3>
+                <p className="description">
+                  프로젝트 노출 관리 페이지에 진입하려면 관리자 비밀번호를 입력해주세요.
+                </p>
+                <input
+                  ref={passwordInputRef}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isVerifying) handleVerifyPassword();
+                  }}
+                  placeholder="패스워드 입력"
+                  css={modalInputStyle}
+                />
+                <div css={modalButtonGroupStyle}>
+                  <button className="cancel-btn" onClick={handleModalCancel} disabled={isVerifying}>
+                    취소
+                  </button>
+                  <button className="confirm-btn" onClick={handleVerifyPassword} disabled={isVerifying}>
+                    {isVerifying ? "확인 중..." : "인증하기"}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div css={adminPageContainerStyle}>
@@ -213,11 +332,10 @@ export default function AdminProjectCheckPage() {
                       {selectedProject.uploadCheck === 1 ? "사용자 화면 노출 ON" : "사용자 화면 노출 OFF"}
                     </span>
                     <label css={switchStyle}>
-                      {/* 💡 onChange에서 바로 API를 쏘지 않고 모달을 오픈하도록 수정 */}
                       <input
                         type="checkbox"
                         checked={selectedProject.uploadCheck === 1}
-                        onChange={() => openConfirmModal(selectedProject)}
+                        onChange={() => openToggleAuthModal(selectedProject)}
                       />
                       <span className="slider" />
                     </label>
@@ -233,7 +351,6 @@ export default function AdminProjectCheckPage() {
                   <label>서브 타이틀</label>
                   <p css={detailSubTitleStyle}>{selectedProject.subTitle || "등록된 서브타이틀이 없습니다."}</p>
 
-                  {/* 🖼️ 수정 완료된 가로 정렬 그리드형 이미지 리스트 구역 */}
                   <label>등록된 공간 사진 목록 ({imageList.length}개)</label>
                   {imageList.length > 0 ? (
                     <div css={imageGridListStyle}>
@@ -268,9 +385,9 @@ export default function AdminProjectCheckPage() {
         </div>
       </div>
 
-      {/* ================= 💡 팝업 컨펌 모달 추가 구역 ================= */}
+      {/* ================= 💡 토글 변경 시 사용되는 동일 패스워드 검증 모달 구역 ================= */}
       <AnimatePresence>
-        {confirmModal.isOpen && (
+        {authModal.isOpen && authModal.mode === "TOGGLE" && (
           <div css={modalOverlayStyle}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -279,25 +396,30 @@ export default function AdminProjectCheckPage() {
               transition={{ type: "spring", duration: 0.4 }}
               css={modalContentStyle}
             >
-              <h3>노출 상태 변경 확인</h3>
-              <p className="project-title">[{confirmModal.projectTitle}]</p>
+              <h3>노출 상태 변경 인증</h3>
+              <p className="project-title">[{authModal.targetProjectTitle}]</p>
               <p className="description">
-                해당 프로젝트의 상태를{" "}
-                <strong>
-                  {confirmModal.currentStatus === 1 ? "['숨김']" : "['노출중']"}
-                </strong>
-                으로 변경하시겠습니까?
+                상태를 <strong>{authModal.targetCurrentStatus === 1 ? "['숨김']" : "['노출중']"}</strong>으로 변경하기 위해 관리자 패스워드를 입력해주세요.
               </p>
               
+              <input
+                ref={passwordInputRef}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isVerifying) handleVerifyPassword();
+                }}
+                placeholder="패스워드 입력"
+                css={modalInputStyle}
+              />
+              
               <div css={modalButtonGroupStyle}>
-                <button 
-                  className="cancel-btn" 
-                  onClick={() => setConfirmModal({ isOpen: false, projectId: null, currentStatus: null, projectTitle: "" })}
-                >
+                <button className="cancel-btn" onClick={handleModalCancel} disabled={isVerifying}>
                   취소
                 </button>
-                <button className="confirm-btn" onClick={handleToggleUpload}>
-                  변경하기
+                <button className="confirm-btn" onClick={handleVerifyPassword} disabled={isVerifying}>
+                  {isVerifying ? "인증 중..." : "변경 승인"}
                 </button>
               </div>
             </motion.div>
@@ -310,7 +432,17 @@ export default function AdminProjectCheckPage() {
 
 // --- Styles ---
 
-// ... (이전 기존 스타일 코드 모두 동일 유지) ...
+const loadingContainerStyle = css`
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #666666;
+  background-color: #fff;
+`;
 
 const adminPageContainerStyle = css`
   padding: 120px 60px 60px 60px;
@@ -423,18 +555,15 @@ const switchStyle = css`
   input:checked + .slider::before { transform: translateX(24px); }
 `;
 
-
-// ================= 💡 새롭게 추가된 모달 관련 스타일 가이드 =================
-
 const modalOverlayStyle = css`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999; /* 헤더나 페이지 내 다른 요소 위에 배치 */
+  z-index: 9999;
 `;
 
 const modalContentStyle = css`
@@ -445,57 +574,30 @@ const modalContentStyle = css`
   max-width: 420px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   text-align: center;
+  h3 { font-size: 1.25rem; font-weight: 700; color: #222; margin-bottom: 12px; }
+  .project-title { font-size: 0.95rem; font-weight: 600; color: #666; margin-bottom: 12px; word-break: break-all; }
+  .description { font-size: 0.95rem; color: #444; line-height: 1.5; margin-bottom: 20px; strong { color: ${colors?.primary || "#9e0012"}; font-weight: 700; } }
+`;
 
-  h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #222;
-    margin-bottom: 12px;
-  }
-
-  .project-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #666;
-    margin-bottom: 16px;
-    word-break: break-all;
-  }
-
-  .description {
-    font-size: 1rem;
-    color: #444;
-    line-height: 1.5;
-    margin-bottom: 24px;
-    strong {
-      color: ${colors?.primary || "#9e0012"};
-    }
-  }
+const modalInputStyle = css`
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+  color: #222222;
+  border: 1.5px solid ${colors?.accent || "#c5a47e"};
+  border-radius: 6px;
+  outline: none;
+  letter-spacing: 0.3em;
+  text-align: center;
+  margin-bottom: 24px;
+  box-sizing: border-box;
+  &:focus { box-shadow: 0 4px 15px rgba(197, 164, 126, 0.15); }
 `;
 
 const modalButtonGroupStyle = css`
   display: flex;
   gap: 12px;
-  
-  button {
-    flex: 1;
-    padding: 12px 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-
-  .cancel-btn {
-    background-color: #f1f1f1;
-    color: #555;
-    &:hover { background-color: #e5e5e5; }
-  }
-
-  .confirm-btn {
-    background-color: ${colors?.primary || "#9e0012"};
-    color: #fff;
-    &:hover { opacity: 0.9; }
-  }
+  button { flex: 1; padding: 12px 0; font-size: 0.95rem; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.2s ease; }
+  .cancel-btn { background-color: #f1f1f1; color: #555; &:hover { background-color: #e5e5e5; } }
+  .confirm-btn { background-color: ${colors?.primary || "#9e0012"}; color: #fff; &:hover { opacity: 0.9; } }
 `;

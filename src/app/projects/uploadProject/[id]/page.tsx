@@ -10,33 +10,50 @@ import { colors } from "@/src/styles/colors";
 export default function ProjectEditPage() {
   const router = useRouter();
   const params = useParams();
-  const projectId = params?.id; // URL에서 [id] 값 추출
+  const projectId = params?.id;
 
   const [title, setTitle] = useState<string>("");
   const [subTitle, setSubTitle] = useState<string>("");
   
-  // 기존 서버에 등록된 이미지 URL/파일명 목록 관리
   const [existingImages, setExistingImages] = useState<string[]>([]);
-  // 새로 추가로 첨부할 파일 목록 관리
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDragActive, setIsDragActive] = useState<boolean>(false);
 
+  // 보안 관련 상태
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false); 
+  const [authMode, setAuthMode] = useState<"ENTRY" | "SUBMIT">("ENTRY"); 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 💡 모달 패스워드 인풋에 안전하게 포커스를 주기 위한 Ref 추가
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. 기존 게시물 데이터 불러오기 (Fetch)
+  // 1. 페이지 접속 시 즉시 비밀번호 모달 오픈
   useEffect(() => {
-    if (!projectId) return;
+    setAuthMode("ENTRY");
+    setIsModalOpen(true);
+  }, []);
+
+  // 💡 [해결] 모달이 열린 것을 감지한 후 안전하게 인풋 포커스 처리 (렌더링 차단 버그 방지)
+  useEffect(() => {
+    if (isModalOpen) {
+      setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 50); // 짧은 딜레이를 주어 애니메이션 타이밍과 겹치지 않게 합니다.
+    }
+  }, [isModalOpen]);
+
+  // 2. 인증이 완료된 후에만 기존 게시물 데이터 불러오기
+  useEffect(() => {
+    if (!projectId || !isAuthorized) return;
 
     const fetchProjectData = async () => {
       try {
-        // 기존 상세조회 API 혹은 수정 전용 API 호출
         const res = await fetch(`/api/projects/${projectId}`, { cache: "no-store" });
         if (!res.ok) throw new Error("게시물을 불러오는데 실패했습니다.");
         
@@ -45,9 +62,7 @@ export default function ProjectEditPage() {
         setTitle(data.title || "");
         setSubTitle(data.subTitle || "");
         
-        // 이미지 경로 처리 (문자열 파싱 또는 배열 데이터 수신)
         if (data.saveNames) {
-          // 예시: 데이터베이스에 "img1.jpg,img2.jpg" 형태로 저장되어 있다면 콤마 분할
           const imgList = typeof data.saveNames === "string" 
             ? data.saveNames.split(",") 
             : data.saveNames;
@@ -63,7 +78,7 @@ export default function ProjectEditPage() {
     };
 
     fetchProjectData();
-  }, [projectId, router]);
+  }, [projectId, isAuthorized, router]);
 
   const handleFileAdd = (files: FileList | null) => {
     if (!files) return;
@@ -102,12 +117,10 @@ export default function ProjectEditPage() {
     }
   }, []);
 
-  // 새로 추가된 파일 제거
   const handleRemoveNewFile = (indexToRemove: number) => {
     setSelectedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
-  // 기존 서버 이미지 제거 조작
   const handleRemoveExistingImage = (indexToRemove: number) => {
     setExistingImages((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
@@ -123,10 +136,11 @@ export default function ProjectEditPage() {
       return;
     }
     setPassword("");
+    setAuthMode("SUBMIT"); 
     setIsModalOpen(true);
   };
 
-  const handleVerifyAndUpdate = async () => {
+  const handleVerifyPassword = async () => {
     if (!password.trim()) {
       alert("비밀번호를 입력해주세요.");
       return;
@@ -134,32 +148,53 @@ export default function ProjectEditPage() {
     setIsVerifying(true);
 
     try {
-      // 2. 비밀번호 검증
       const verifyRes = await fetch("/api/projects/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },}
-      );
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() }),
+      });
 
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) throw new Error(verifyData.message || "비밀번호가 일치하지 않습니다.");
 
+      if (authMode === "ENTRY") {
+        setIsAuthorized(true);
+        setIsModalOpen(false);
+        setPassword("");
+        setIsVerifying(false);
+        return;
+      }
+
       setIsSubmitting(true);
       setIsModalOpen(false);
 
-      // 3. 수정 데이터 전송 (PUT 요청 생성)
       const formData = new FormData();
       formData.append("title", title.trim());
       formData.append("subTitle", subTitle.trim());
-      // 최종적으로 살아남은 기존 이미지 목록 전송
-      formData.append("keepImages", JSON.stringify(existingImages)); 
+
+      /* ---------------------------------------------------------------
+        💡 [핵심 수정 구역] 기존 이미지 유지를 위한 FormData 바인딩 변경
+      --------------------------------------------------------------- */
+      if (existingImages.length > 0) {
+        // 방법 1: 백엔드가 콤마(,) 기반 split 구조로 saveNames를 결합/저장하는 구조일 때 가장 안전함
+        formData.append("keepImages", existingImages.join(","));
+
+        // 방법 2: 백엔드에서 다중 폼 필드 배열(req.body.keepImages)로 수신할 경우 아래 루프 사용
+        // existingImages.forEach((imgUrl) => {
+        //   formData.append("keepImages", imgUrl);
+        // });
+      } else {
+        // 남겨둔 기존 이미지가 없다면 빈 값 명시
+        formData.append("keepImages", "");
+      }
       
-      // 새로 추가한 이미지 파일 전송
+      // 새로 추가된 파일들 append
       selectedFiles.forEach((file) => {
         formData.append("files", file);
       });
 
       const updateRes = await fetch(`/api/projects/${projectId}`, {
-        method: "PUT", // 또는 백엔드 설계에 따라 POST 사용 가능
+        method: "PUT",
         body: formData,
       });
 
@@ -169,22 +204,83 @@ export default function ProjectEditPage() {
       }
 
       alert("포트폴리오 프로젝트가 성공적으로 수정되었습니다.");
-      router.push(`/projects`); // 수정 완료 후 리스트로 이동
+      router.push(`/projects`);
       router.refresh();
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof Error) alert(err.message);
-      else alert("프로젝트 수정에 실패했습니다.");
+      else alert("인증 혹은 프로젝트 수정에 실패했습니다.");
     } finally {
       setIsVerifying(false);
-      setIsSubmitting(false);
+      if (authMode === "SUBMIT") {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  if (isLoading) {
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    if (authMode === "ENTRY") {
+      router.back();
+    }
+  };
+
+  // 권한 승인 전 혹은 데이터 페칭 중인 경우의 화면
+  if (!isAuthorized || isLoading) {
     return (
       <div css={loadingContainerStyle}>
-        <p>기존 게시물 데이터를 불러오는 중입니다...</p>
+        <p>{!isAuthorized ? "보안 인증을 진행 중입니다..." : "기존 게시물 데이터를 불러오는 중입니다..."}</p>
+        
+        {/* 💡 [핵심] 중요! 화면이 Block 상태일 때도 AnimatePresence 내부 모달이 돔트리에 남아있을 수 있도록 여기에 모달 구조를 함께 열어줍니다. */}
+        <AnimatePresence>
+          {isModalOpen && (
+            <div css={modalOverlayStyle}>
+              <motion.div
+                css={modalBoxStyle}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <h3 className="modal-title">수정 인증</h3>
+                <p className="modal-desc">
+                  {authMode === "ENTRY" 
+                    ? "수정 페이지에 진입하려면 관리자 비밀번호를 입력해주세요."
+                    : "포트폴리오 수정을 완료하려면 관리자 비밀번호를 한번 더 입력해주세요."}
+                </p>
+                <input
+                  ref={passwordInputRef}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isVerifying) handleVerifyPassword();
+                  }}
+                  placeholder="관리자 패스워드 입력"
+                  css={modalInputStyle}
+                />
+                <div css={modalActionStyle}>
+                  <button
+                    type="button"
+                    onClick={handleModalCancel}
+                    css={modalCancelBtnStyle}
+                    disabled={isVerifying}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVerifyPassword}
+                    css={modalSubmitBtnStyle(isVerifying)}
+                    disabled={isVerifying}
+                  >
+                    {isVerifying ? "인증 중..." : "인증 확인"}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -273,9 +369,8 @@ export default function ProjectEditPage() {
                 </div>
               </div>
 
-              {/* 이미지 목록 구역 (기존 이미지 + 새로 추가된 이미지 혼합 구성) */}
+              {/* 이미지 목록 구역 */}
               <div css={fileListContainerStyle}>
-                {/* A. 기존 서버 이미지 노출 */}
                 {existingImages.length > 0 && (
                   <>
                     <div className="list-header">유지되는 기존 이미지 ({existingImages.length}개)</div>
@@ -283,7 +378,6 @@ export default function ProjectEditPage() {
                       {existingImages.map((imgUrl, index) => (
                         <div key={`existing-${index}`} css={fileCardStyle}>
                           <div className="img-thumbnail">
-                            {/* 백엔드 업로드 경로에 맞춰 src 조절 필요 */}
                             <img src={`/uploads/${imgUrl}`} alt="existing preview" />
                             {index === 0 && <span css={thumbnailBadgeStyle}>THUMBNAIL</span>}
                           </div>
@@ -307,7 +401,6 @@ export default function ProjectEditPage() {
                   </>
                 )}
 
-                {/* B. 새로 업로드 선택한 파일 노출 */}
                 {selectedFiles.length > 0 && (
                   <>
                     <div className="list-header">새로 추가된 파일 ({selectedFiles.length}개)</div>
@@ -376,22 +469,26 @@ export default function ProjectEditPage() {
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
               <h3 className="modal-title">수정 인증</h3>
-              <p className="modal-desc">수정을 완료하려면 관리자 비밀번호를 입력해주세요.</p>
+              <p className="modal-desc">
+                {authMode === "ENTRY" 
+                  ? "수정 페이지에 진입하려면 관리자 비밀번호를 입력해주세요."
+                  : "포트폴리오 수정을 완료하려면 관리자 비밀번호를 한번 더 입력해주세요."}
+              </p>
               <input
+                ref={passwordInputRef}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !isVerifying) handleVerifyAndUpdate();
+                  if (e.key === "Enter" && !isVerifying) handleVerifyPassword();
                 }}
                 placeholder="관리자 패스워드 입력"
                 css={modalInputStyle}
-                autoFocus
               />
               <div css={modalActionStyle}>
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleModalCancel}
                   css={modalCancelBtnStyle}
                   disabled={isVerifying}
                 >
@@ -399,11 +496,11 @@ export default function ProjectEditPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleVerifyAndUpdate}
+                  onClick={handleVerifyPassword}
                   css={modalSubmitBtnStyle(isVerifying)}
                   disabled={isVerifying}
                 >
-                  {isVerifying ? "인증 중..." : "인증 및 수정"}
+                  {isVerifying ? "인증 중..." : "인증 확인"}
                 </button>
               </div>
             </motion.div>
@@ -414,25 +511,23 @@ export default function ProjectEditPage() {
   );
 }
 
-// --- Styles ---
-
+// --- Styles (기존과 동일) ---
 const loadingContainerStyle = css`
   width: 100%;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   font-size: 1.1rem;
   color: ${colors.gray?.[600] || "#666666"};
   background-color: ${colors.white};
 `;
-
 const writePageContainerStyle = css`
   width: 100%;
   min-height: 100vh;
   background-color: ${colors.white};
 `;
-
 const formSectionStyle = css`
   width: 100%;
   background-color: ${colors.white};
@@ -441,7 +536,6 @@ const formSectionStyle = css`
   position: relative;
   z-index: 10;
 `;
-
 const formWrapperStyle = css`
   max-width: 800px;
   margin: 0 auto;
@@ -450,7 +544,6 @@ const formWrapperStyle = css`
     padding: 0 20px;
   }
 `;
-
 const editHeaderStyle = css`
   margin-bottom: 3rem;
   h2 {
@@ -465,7 +558,6 @@ const editHeaderStyle = css`
     color: ${colors.gray?.[500] || "#888888"};
   }
 `;
-
 const formStyle = css`
   display: flex;
   flex-direction: column;
@@ -482,7 +574,6 @@ const labelStyle = css`
   letter-spacing: 0.05em;
   color: ${colors?.primary || "#111111"};
 `;
-
 const textInputStyle = css`
   width: 100%;
   padding: 14px 20px;
@@ -500,7 +591,6 @@ const textInputStyle = css`
     cursor: not-allowed;
   }
 `;
-
 const textareaInputStyle = css`
   width: 100%;
   min-height: 140px;
@@ -521,7 +611,6 @@ const textareaInputStyle = css`
     cursor: not-allowed;
   }
 `;
-
 const hiddenFileInputStyle = css`
   display: none;
 `;
@@ -544,11 +633,9 @@ const dropZoneStyle = (isActive: boolean) => css`
     color: ${colors?.primary || "#111111"};
   }
 `;
-
 const uploadIconStyle = css`
   color: ${colors?.accent || "#c5a47e"};
 `;
-
 const noticeContainerStyle = css`
   margin-top: 14px;
   display: flex;
@@ -571,7 +658,6 @@ const noticeContainerStyle = css`
     font-weight: bold;
   }
 `;
-
 const fileListContainerStyle = css`
   margin-top: 1.5rem;
   .list-header {
@@ -589,7 +675,6 @@ const fileGridStyle = css`
     grid-template-columns: 1fr;
   }
 `;
-
 const fileCardStyle = css`
   display: flex;
   align-items: center;
@@ -635,7 +720,6 @@ const fileCardStyle = css`
     }
   }
 `;
-
 const thumbnailBadgeStyle = css`
   position: absolute;
   bottom: 0;
@@ -668,7 +752,6 @@ const actionButtonContainerStyle = css`
   gap: 15px;
   margin-top: 1.5rem;
 `;
-
 const cancelButtonStyle = css`
   padding: 14px 28px;
   font-size: 0.95rem;
@@ -684,7 +767,6 @@ const cancelButtonStyle = css`
     box-shadow: 0 4px 12px rgba(229, 0, 0, 0.06);
   }
 `;
-
 const submitButtonStyle = (isSubmitting: boolean) => css`
   padding: 14px 35px;
   font-size: 0.95rem;
@@ -696,7 +778,6 @@ const submitButtonStyle = (isSubmitting: boolean) => css`
   cursor: ${isSubmitting ? "not-allowed" : "pointer"};
   opacity: ${isSubmitting ? 0.7 : 1};
 `;
-
 const modalOverlayStyle = css`
   position: fixed;
   top: 0;

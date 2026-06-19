@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { css } from "@emotion/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -17,17 +17,27 @@ interface Project {
 export default function ProjectWritePage() {
   const router = useRouter();
 
+  // --- 상태 관리 ---
   const [title, setTitle] = useState<string>("");
   const [subTitle, setSubTitle] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDragActive, setIsDragActive] = useState<boolean>(false);
 
+  // 보안 관련 상태 추가 및 변경
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false); // 페이지 진입 권한 여부
+  const [authMode, setAuthMode] = useState<"ENTRY" | "SUBMIT">("ENTRY"); // ENTRY: 진입 검증, SUBMIT: 제출 검증
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
   const [isVerifying, setSearchVerifying] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 💡 페이지 접속 시 즉시 비밀번호 모달 오픈
+  useEffect(() => {
+    setAuthMode("ENTRY");
+    setIsModalOpen(true);
+  }, []);
 
   const handleFileAdd = (files: FileList | null) => {
     if (!files) return;
@@ -72,6 +82,7 @@ export default function ProjectWritePage() {
     );
   };
 
+  // 등록 버튼 클릭 시 트리거
   const handleFormSubmitTrigger = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !subTitle.trim()) {
@@ -83,10 +94,12 @@ export default function ProjectWritePage() {
       return;
     }
     setPassword("");
+    setAuthMode("SUBMIT"); // 제출을 위한 검증 모드로 변경
     setIsModalOpen(true);
   };
 
-  const handleVerifyAndUpload = async () => {
+  // 💡 통합 비밀번호 검증 및 업로드 핸들러
+  const handleVerifyPassword = async () => {
     if (!password.trim()) {
       alert("비밀번호를 입력해주세요.");
       return;
@@ -104,6 +117,16 @@ export default function ProjectWritePage() {
       if (!verifyRes.ok)
         throw new Error(verifyData.message || "비밀번호가 일치하지 않습니다.");
 
+      // 1. 페이지 진입 검증에 성공한 경우
+      if (authMode === "ENTRY") {
+        setIsAuthorized(true);
+        setIsModalOpen(false);
+        setPassword("");
+        setSearchVerifying(false);
+        return;
+      }
+
+      // 2. 최종 게시물 등록 검증에 성공한 경우
       setIsSubmitting(true);
       setIsModalOpen(false);
 
@@ -132,164 +155,177 @@ export default function ProjectWritePage() {
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof Error) alert(err.message);
-      else alert("프로젝트 저장에 실패했습니다. 관리자 로그를 확인하세요.");
+      else alert("인증 혹은 프로젝트 저장에 실패했습니다. 관리자 로그를 확인하세요.");
     } finally {
       setSearchVerifying(false);
-      setIsSubmitting(false);
+      if (authMode === "SUBMIT") {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  // 모달 닫기(취소) 시 처리
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    // 페이지 진입 전 인증 취소 시 이전 페이지로 튕겨냄
+    if (authMode === "ENTRY") {
+      router.back();
     }
   };
 
   return (
     <div css={writePageContainerStyle}>
-      {/* 💡 상단 패딩 영역과 본문 영역 전체를 흰색으로 밀봉하여 네이비색 노출 차단 */}
       <section css={formSectionStyle}>
-        <motion.div
-          css={formWrapperStyle}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <form onSubmit={handleFormSubmitTrigger} css={formStyle}>
-            {/* 1. 제목 입력 필드 */}
-            <div css={inputGroupStyle}>
-              <label css={labelStyle}>프로젝트명 (Title)</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="예: 청년다방 롯데월드점"
-                css={textInputStyle}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* 2. 부제목 입력 필드 */}
-            <div css={inputGroupStyle}>
-              <label css={labelStyle}>설명 요약 (Sub Title)</label>
-              <textarea
-                value={subTitle}
-                onChange={(e) => setSubTitle(e.target.value)}
-                placeholder="예: 청년다방 롯데월드점 26.01.01"
-                css={textareaInputStyle}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* 3. 공간 사진 첨부 */}
-            <div css={inputGroupStyle}>
-              <label css={labelStyle}>공간 사진 첨부 (Images)</label>
-              <div
-                css={dropZoneStyle(isDragActive)}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
+        {/* 💡 인증이 성공했을 때만 본문 입력 폼 랜더링 */}
+        {isAuthorized && (
+          <motion.div
+            css={formWrapperStyle}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <form onSubmit={handleFormSubmitTrigger} css={formStyle}>
+              {/* 1. 제목 입력 필드 */}
+              <div css={inputGroupStyle}>
+                <label css={labelStyle}>프로젝트명 (Title)</label>
                 <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  multiple
-                  accept="image/*"
-                  css={hiddenFileInputStyle}
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="예: 청년다방 롯데월드점"
+                  css={textInputStyle}
+                  disabled={isSubmitting}
                 />
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  css={uploadIconStyle}
-                >
-                  <path
-                    d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"
-                    fill="currentColor"
-                  />
-                </svg>
-                <p className="main-text">
-                  클릭하거나 사진 파일을 여기로 끌어다 놓으세요.
-                </p>
-
-                <div
-                  css={noticeContainerStyle}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="sub-text">
-                    <span className="accent-dot">•</span>{" "}
-                    <strong>첫 번째로 첨부된 이미지</strong>가 메인 화면의{" "}
-                    <strong>썸네일</strong>로 지정됩니다.
-                  </p>
-                  <p className="sub-text">
-                    <span className="accent-dot">•</span> 시스템 안정성을 위해
-                    파일명은 반드시 <strong>영문 또는 숫자</strong>로
-                    업로드해주세요.
-                  </p>
-                  <p className="sub-text-info">
-                    JPG, PNG, WEBP 등 고해상도 이미지 다중 선택 가능
-                  </p>
-                </div>
               </div>
 
-              {/* 업로드 대상 파일 리스트 카드 */}
-              {selectedFiles.length > 0 && (
-                <div css={fileListContainerStyle}>
-                  <div className="list-header">
-                    선택된 파일 ({selectedFiles.length}개)
-                  </div>
-                  <div css={fileGridStyle}>
-                    {selectedFiles.map((file, index) => (
-                      <div key={`${file.name}-${index}`} css={fileCardStyle}>
-                        <div className="img-thumbnail">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={URL.createObjectURL(file)} alt="preview" />
-                          {index === 0 && (
-                            <span css={thumbnailBadgeStyle}>THUMBNAIL</span>
-                          )}
-                        </div>
-                        <div className="file-info">
-                          <span className="file-name">{file.name}</span>
-                          <span className="file-size">
-                            {(file.size / (1024 * 1024)).toFixed(2)} MB
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
-                          }}
-                          css={fileDeleteButtonStyle}
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
+              {/* 2. 부제목 입력 필드 */}
+              <div css={inputGroupStyle}>
+                <label css={labelStyle}>설명 요약 (Sub Title)</label>
+                <textarea
+                  value={subTitle}
+                  onChange={(e) => setSubTitle(e.target.value)}
+                  placeholder="예: 청년다방 롯데월드점 26.01.01"
+                  css={textareaInputStyle}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* 3. 공간 사진 첨부 */}
+              <div css={inputGroupStyle}>
+                <label css={labelStyle}>공간 사진 첨부 (Images)</label>
+                <div
+                  css={dropZoneStyle(isDragActive)}
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    multiple
+                    accept="image/*"
+                    css={hiddenFileInputStyle}
+                  />
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    css={uploadIconStyle}
+                  >
+                    <path
+                      d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <p className="main-text">
+                    클릭하거나 사진 파일을 여기로 끌어다 놓으세요.
+                  </p>
+
+                  <div
+                    css={noticeContainerStyle}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <p className="sub-text">
+                      <span className="accent-dot">•</span>{" "}
+                      <strong>첫 번째로 첨부된 이미지</strong>가 메인 화면의{" "}
+                      <strong>썸네일</strong>로 지정됩니다.
+                    </p>
+                    <p className="sub-text">
+                      <span className="accent-dot">•</span> 시스템 안정성을 위해
+                      파일명은 반드시 <strong>영문 또는 숫자</strong>로
+                      업로드해주세요.
+                    </p>
+                    <p className="sub-text-info">
+                      JPG, PNG, WEBP 등 고해상도 이미지 다중 선택 가능
+                    </p>
                   </div>
                 </div>
-              )}
-            </div>
 
-            {/* 하단 제어부 버튼 바 */}
-            <div css={actionButtonContainerStyle}>
-              <button
-                type="button"
-                onClick={() => router.back()}
-                css={cancelButtonStyle}
-                disabled={isSubmitting}
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                css={submitButtonStyle(isSubmitting)}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "처리 중..." : "아카이브 등록하기"}
-              </button>
-            </div>
-          </form>
-        </motion.div>
+                {/* 업로드 대상 파일 리스트 카드 */}
+                {selectedFiles.length > 0 && (
+                  <div css={fileListContainerStyle}>
+                    <div className="list-header">
+                      선택된 파일 ({selectedFiles.length}개)
+                    </div>
+                    <div css={fileGridStyle}>
+                      {selectedFiles.map((file, index) => (
+                        <div key={`${file.name}-${index}`} css={fileCardStyle}>
+                          <div className="img-thumbnail">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={URL.createObjectURL(file)} alt="preview" />
+                            {index === 0 && (
+                              <span css={thumbnailBadgeStyle}>THUMBNAIL</span>
+                            )}
+                          </div>
+                          <div className="file-info">
+                            <span className="file-name">{file.name}</span>
+                            <span className="file-size">
+                              {(file.size / (1024 * 1024)).toFixed(2)} MB
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveFile(index);
+                            }}
+                            css={fileDeleteButtonStyle}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 하단 제어부 버튼 바 */}
+              <div css={actionButtonContainerStyle}>
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  css={cancelButtonStyle}
+                  disabled={isSubmitting}
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  css={submitButtonStyle(isSubmitting)}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "처리 중..." : "아카이브 등록하기"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
       </section>
 
       {/* 관리자 비밀번호 검증 모달 */}
@@ -305,7 +341,9 @@ export default function ProjectWritePage() {
             >
               <h3 className="modal-title">보안 인증</h3>
               <p className="modal-desc">
-                포트폴리오 업로드를 완료하려면 관리자 비밀번호를 입력해주세요.
+                {authMode === "ENTRY" 
+                  ? "작성 페이지에 진입하려면 관리자 비밀번호를 입력해주세요."
+                  : "포트폴리오 업로드를 완료하려면 관리자 비밀번호를 한번 더 입력해주세요."}
               </p>
               <input
                 type="password"
@@ -313,7 +351,7 @@ export default function ProjectWritePage() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isVerifying)
-                    handleVerifyAndUpload();
+                    handleVerifyPassword();
                 }}
                 placeholder="관리자 패스워드 입력"
                 css={modalInputStyle}
@@ -322,7 +360,7 @@ export default function ProjectWritePage() {
               <div css={modalActionStyle}>
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleModalCancel}
                   css={modalCancelBtnStyle}
                   disabled={isVerifying}
                 >
@@ -330,11 +368,11 @@ export default function ProjectWritePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleVerifyAndUpload}
+                  onClick={handleVerifyPassword}
                   css={modalSubmitBtnStyle(isVerifying)}
                   disabled={isVerifying}
                 >
-                  {isVerifying ? "인증 중..." : "인증 및 업로드"}
+                  {isVerifying ? "인증 중..." : "인증 확인"}
                 </button>
               </div>
             </motion.div>
@@ -345,26 +383,20 @@ export default function ProjectWritePage() {
   );
 }
 
-// --- Styles ---
-
-// 💡 [변경] 상단 여백(padding-top)을 완전히 제거하여 컨테이너가 찢어지는 틈새를 차단합니다.
+// --- Styles (기존과 동일함) ---
 const writePageContainerStyle = css`
   width: 100%;
   min-height: 100vh;
-  background-color: ${colors.white}; /* 전체 기본 배경을 흰색으로 통일 */
+  background-color: ${colors.white};
 `;
-
-// 💡 [변경] 상단 고정 헤더 영역(80px)을 확보하는 padding-top을 본문 섹션에 직접 적용하고, 
-// 배경색을 완전한 흰색으로 선언하여 네이비색 박스를 완전히 밀봉합니다.
 const formSectionStyle = css`
   width: 100%;
   background-color: ${colors.white};
-  padding-top: 120px; /* 고정 헤더(80px) 확보 및 넉넉한 상단 여백 레이아웃 지정 */
+  padding-top: 120px;
   padding-bottom: 120px;
   position: relative;
   z-index: 10;
 `;
-
 const formWrapperStyle = css`
   max-width: 800px;
   margin: 0 auto;
@@ -373,7 +405,6 @@ const formWrapperStyle = css`
     padding: 0 20px;
   }
 `;
-
 const formStyle = css`
   display: flex;
   flex-direction: column;
@@ -390,7 +421,6 @@ const labelStyle = css`
   letter-spacing: 0.05em;
   color: ${colors?.primary || "#111111"};
 `;
-
 const textInputStyle = css`
   width: 100%;
   padding: 14px 20px;
@@ -408,7 +438,6 @@ const textInputStyle = css`
     cursor: not-allowed;
   }
 `;
-
 const textareaInputStyle = css`
   width: 100%;
   min-height: 140px;
@@ -429,7 +458,6 @@ const textareaInputStyle = css`
     cursor: not-allowed;
   }
 `;
-
 const hiddenFileInputStyle = css`
   display: none;
 `;
@@ -452,11 +480,9 @@ const dropZoneStyle = (isActive: boolean) => css`
     color: ${colors?.primary || "#111111"};
   }
 `;
-
 const uploadIconStyle = css`
   color: ${colors?.accent || "#c5a47e"};
 `;
-
 const noticeContainerStyle = css`
   margin-top: 14px;
   display: flex;
@@ -484,7 +510,6 @@ const noticeContainerStyle = css`
     margin-top: 4px;
   }
 `;
-
 const fileListContainerStyle = css`
   margin-top: 1.5rem;
   .list-header {
@@ -501,7 +526,6 @@ const fileGridStyle = css`
     grid-template-columns: 1fr;
   }
 `;
-
 const fileCardStyle = css`
   display: flex;
   align-items: center;
@@ -542,7 +566,6 @@ const fileCardStyle = css`
     }
   }
 `;
-
 const thumbnailBadgeStyle = css`
   position: absolute;
   bottom: 0;
@@ -575,7 +598,6 @@ const actionButtonContainerStyle = css`
   gap: 15px;
   margin-top: 1.5rem;
 `;
-
 const cancelButtonStyle = css`
   padding: 14px 28px;
   font-size: 0.95rem;
@@ -591,7 +613,6 @@ const cancelButtonStyle = css`
     box-shadow: 0 4px 12px rgba(229, 0, 0, 0.06);
   }
 `;
-
 const submitButtonStyle = (isSubmitting: boolean) => css`
   padding: 14px 35px;
   font-size: 0.95rem;
@@ -603,7 +624,6 @@ const submitButtonStyle = (isSubmitting: boolean) => css`
   cursor: ${isSubmitting ? "not-allowed" : "pointer"};
   opacity: ${isSubmitting ? 0.7 : 1};
 `;
-
 const modalOverlayStyle = css`
   position: fixed;
   top: 0;
