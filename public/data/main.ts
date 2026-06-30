@@ -9,10 +9,9 @@ export interface MainData {
 export const data_main: MainData[] = [
   {
     id: "main",
-    view: "WE DESIGN",
+    view: "",
     title: "",
-    content:
-      "THE <b>FUTURE</b> OF <b>SPACE</b>\nWITH <b>VALUE</b> IN <b>MIND</b>",
+    content: "DON'T SETTLE FOR <b>MEDIOCRITY</b>\nSETTLE FOR <b>PERFECTION</b>",
     path: "",
   },
   {

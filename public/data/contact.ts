@@ -1,4 +1,5 @@
 interface Contact {
+  company: string;
   tel: string;
   fax: string;
   email: string;
@@ -14,6 +15,7 @@ interface ContactDataSet {
 }
 
 export const data_contact: Contact = {
+  company: "(주)선준아이디",
   tel: "02-441-0121",
   fax: "02-441-0122",
   email: "sunjunid@naver.com",

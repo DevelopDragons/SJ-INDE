@@ -28,7 +28,7 @@ export default function Footer() {
           {/* 기업 정보 영역 (data_contact 데이터 실시간 연동) */}
           <div css={infoContent}>
             <span>
-              선준아이디 <Divider /> 대표자: {data_contact.representative}{" "}
+              {data_contact.company} <Divider /> 대표자: {data_contact.representative}{" "}
               <Divider /> 사업자등록번호: {data_contact.brn}
             </span>
             <span>

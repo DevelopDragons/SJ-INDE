@@ -35,29 +35,24 @@ export default function BasicSection({
     ease: [0.16, 1, 0.3, 1],
   };
 
-  // 클릭 시 한 섹션 아래로 이동하는 함수
-  const handleScrollClick = () => {
-    const nextSection = document.getElementById(sec.id)?.nextElementSibling;
-    if (nextSection) {
-      nextSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
     <section id={sec.id} ref={sectionRef} css={sectionStyle}>
       {/* 배경 및 오버레이 */}
       <div css={bgWrapperStyle}>
+        {/* 💡 [수정] 인라인 style을 걷어내고 css 속성(mainImageStyle)을 주입하여 
+            Next.js 내부 스타일을 이기고 이미지를 아래로 내립니다. */}
         <Image
           src={`/images/${sec.id}.jpg`}
           alt={sec.id}
           fill
           priority={sec.id === "main"}
-          style={{ objectFit: "cover" }}
+          css={mainImageStyle(sec.id)}
         />
         <div css={overlayStyle} />
       </div>
 
-      <div css={contentStyle}>
+      {/* sec.id를 넘겨 main일 때 아래쪽 패딩을 밀어 올리도록 조작합니다. */}
+      <div css={contentStyle(sec.id)}>
         {/* VIEW TAG */}
         <motion.div
           {...fadeInUp}
@@ -149,6 +144,17 @@ const sectionStyle = css({
 
 const bgWrapperStyle = css({ position: "absolute", inset: 0, zIndex: 0 });
 
+/* 💡 [핵심 추가] main일 때 이미지를 미세하게 아래로 정렬시키는 전용 스타일 */
+const mainImageStyle = (id: string) => css`
+  object-fit: cover !important;
+
+  /* 기본값은 center(50% 50%)입니다. 
+     Y축 축적을 center top(또는 30%~40%) 쪽으로 올려주면, 이미지 내용물 전체가 아래로 밀려 내려갑니다. */
+  object-position: ${id === "main"
+    ? "center 35% !important"
+    : "center !important"};
+`;
+
 const overlayStyle = css({
   position: "absolute",
   inset: 0,
@@ -157,16 +163,34 @@ const overlayStyle = css({
   zIndex: 1,
 });
 
-const contentStyle = css({
-  position: "relative",
-  zIndex: 2,
-  color: colors.white,
-  textAlign: "center",
-  width: "100%",
-  padding: "0 150px",
-  "@media (max-width: 768px)": { padding: "0 100px" },
-  "@media (max-width: 480px)": { padding: "0 30px" },
-});
+const contentStyle = (id: string) => css`
+  position: relative;
+  z-index: 2;
+  color: ${colors.white};
+  text-align: center;
+  width: 100%;
+  padding: 0 150px;
+
+  ${id === "main" &&
+  css`
+    padding-bottom: 250px;
+  `}
+
+  @media (max-width: 768px) {
+    padding: 0 100px;
+    ${id === "main" &&
+    css`
+      padding-bottom: 150px;
+    `}
+  }
+  @media (max-width: 480px) {
+    padding: 0 30px;
+    ${id === "main" &&
+    css`
+      padding-bottom: 100px;
+    `}
+  }
+`;
 
 const viewTagStyle = css({
   fontSize: "1.5rem",
@@ -209,8 +233,6 @@ const titleStyle = css({
 
 const buttonAreaStyle = css({ marginTop: "1rem" });
 
-// --- 스크롤 아이콘 스타일 ---
-
 const scrollContainerStyle = css({
   position: "absolute",
   bottom: "50px",
@@ -221,7 +243,7 @@ const scrollContainerStyle = css({
   flexDirection: "column",
   alignItems: "center",
   gap: "12px",
-  cursor: "pointer", // 클릭 가능함을 알림
+  cursor: "pointer",
   "&:hover span": {
     opacity: 1,
     letterSpacing: "0.3em",
