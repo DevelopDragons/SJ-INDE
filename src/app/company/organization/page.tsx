@@ -10,11 +10,10 @@ import PageSlogan from "@/src/components/text/PageSlogan";
 
 export default function CompanyOrganizationPage() {
   const pathname = usePathname();
-  const deptCount = data_organization.children?.length || 1;
 
   return (
     <div css={orgPageWrapperStyle}>
-      {/* 🧭 우측 서브페이지 네비게이션 추가 */}
+      {/* 🧭 우측 서브페이지 네비게이션 */}
       <aside css={asideStyle}>
         <Link
           href="/company/about"
@@ -49,7 +48,7 @@ export default function CompanyOrganizationPage() {
 
       <section css={orgContentSectionStyle}>
         <div css={containerStyle}>
-          {/* 1. 데스크탑/태블릿용 트리 구조 */}
+          {/* 1. 자리가 여유로울 때의 원본 가로 트리 구조 */}
           <div css={desktopTreeWrapper}>
             <div css={rootWrapperStyle}>
               <div css={nodeBoxStyle("root")}>{data_organization.name}</div>
@@ -76,21 +75,41 @@ export default function CompanyOrganizationPage() {
             </div>
           </div>
 
-          {/* 2. 모바일용 카드 레이아웃 */}
-          <div css={mobileCardWrapper}>
-            <div css={mobileRootBox}>{data_organization.name}</div>
-            <div css={mobileGridStyle}>
-              {data_organization.children?.map((dept) => (
-                <div key={dept.id} css={mobileDeptCard}>
-                  <div css={mobileDeptTitle}>{dept.name}</div>
-                  <div css={mobileDivider} />
-                  <div css={mobileTeamList}>
-                    {dept.children?.map((team) => (
-                      <span key={team.id}>{team.name}</span>
-                    ))}
+          {/* 2. 1200px 이하 태블릿 + 모바일 전체 통합 상시 전개형 레이아웃 */}
+          <div css={responsiveListWrapper}>
+            {/* 최상위 루트 본부 노드 */}
+            <div css={listRootBox}>{data_organization.name}</div>
+
+            {/* 세로형 리스트 컨테이너 */}
+            <div css={listContainer}>
+              {data_organization.children?.map((dept) => {
+                const hasTeams = dept.children && dept.children.length > 0;
+
+                return (
+                  <div key={dept.id} css={deptRowCard}>
+                    {/* 부서명 타이틀 */}
+                    <div
+                      css={[
+                        deptRowTitleBase,
+                        hasTeams ? deptRowTitleWithTeams : deptRowTitleAlone,
+                      ]}
+                    >
+                      {dept.name}
+                    </div>
+
+                    {/* 소속 팀 리스트 */}
+                    {hasTeams && (
+                      <div css={teamGridStyle}>
+                        {dept.children?.map((team) => (
+                          <div key={team.id} css={teamNodeStyle}>
+                            {team.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -109,7 +128,6 @@ const orgPageWrapperStyle = css`
 const orgContentSectionStyle = css`
   width: 100%;
   background-color: ${colors.white};
-  overflow-x: auto;
 `;
 
 const containerStyle = css`
@@ -117,7 +135,7 @@ const containerStyle = css`
   margin: 0 auto;
   padding: 40px 2rem 120px 2rem;
   @media (max-width: 600px) {
-    padding: 40px 1rem;
+    padding: 40px 1.5rem;
   }
 `;
 
@@ -126,8 +144,7 @@ const desktopTreeWrapper = css`
   flex-direction: column;
   align-items: center;
   width: 100%;
-  min-width: 800px;
-  @media (max-width: 1024px) {
+  @media (max-width: 1200px) {
     display: none;
   }
 `;
@@ -226,63 +243,94 @@ const teamGroupStyle = css`
   gap: 8px;
 `;
 
-const mobileCardWrapper = css`
+const responsiveListWrapper = css`
   display: none;
   width: 100%;
-  @media (max-width: 1024px) {
+  max-width: 600px;
+  margin: 0 auto;
+
+  @media (max-width: 1200px) {
     display: flex;
     flex-direction: column;
-    gap: 16px;
   }
 `;
 
-const mobileRootBox = css`
+const listRootBox = css`
   background-color: ${colors.primary};
   color: ${colors.white};
-  padding: 18px;
-  text-align: center;
-  font-size: 1.1rem;
+  padding: 16px;
+  font-size: 1.05rem;
   font-weight: 700;
-  border-radius: 4px;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 `;
 
-const mobileGridStyle = css`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+const listContainer = css`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
 `;
 
-const mobileDeptCard = css`
+const deptRowCard = css`
   background-color: ${colors.white};
   border: 1px solid ${colors.gray[200]};
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border-radius: 4px;
+  border-radius: 6px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+  box-sizing: border-box;
 `;
 
-const mobileDeptTitle = css`
-  font-weight: 700;
+const deptRowTitleBase = css`
+  font-size: 1.05rem;
+  font-weight: 800;
   color: ${colors.gray[800]};
-  font-size: 0.95rem;
-`;
-const mobileDivider = css`
-  width: 20px;
-  height: 1px;
-  background-color: ${colors.gray[300]};
-  margin: 8px 0;
-`;
-const mobileTeamList = css`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.8rem;
-  color: ${colors.gray[600]};
+  text-align: center;
 `;
 
-/* 🧭 네비게이션 공통 스타일 */
+const deptRowTitleWithTeams = css`
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid ${colors.gray[200]};
+`;
+
+const deptRowTitleAlone = css`
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+`;
+
+const teamGridStyle = css`
+  display: grid;
+  /* 💡 태블릿 규격(가로 여유)에서는 2열 배치, 모바일 등 화면이 좁아지면 무조건 1열로 딱 떨어지게 변경 */
+  grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+`;
+
+const teamNodeStyle = css`
+  background-color: ${colors.gray[100]};
+  border: 1px solid ${colors.gray[100]};
+  color: ${colors.gray[600]};
+  padding: 11px 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  width: 100%;
+`;
+
 const asideStyle = css`
   position: fixed;
   right: 40px;
@@ -292,7 +340,7 @@ const asideStyle = css`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  @media (max-width: 1024px) {
+  @media (max-width: 1200px) {
     display: none;
   }
 `;

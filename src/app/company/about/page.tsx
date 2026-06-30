@@ -74,10 +74,7 @@ export default function CompanyAboutPage() {
               transition={{ duration: 1, ease: "easeOut" }}
               viewport={{ once: true }}
             >
-              <img
-                src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200"
-                alt="Studio Atmosphere"
-              />
+              <img src="../images/ceo.png" alt="Studio Atmosphere" />
             </motion.div>
 
             <motion.div
